@@ -1,0 +1,11 @@
+{
+    "manifest_version": 3,
+    "name": "HackDuck",
+    "version": "1.0.0",
+    "description": "A DevTools extension for HackDuck",
+    "icons": {
+      "48": "dist/icons/icon48.png",
+      "128": "dist/icons/icon128.png"
+    },
+    "devtools_page": "devtools.html"
+}
