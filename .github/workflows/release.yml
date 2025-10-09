@@ -53,7 +53,7 @@ jobs:
       with:
         tag_name: ${{ github.ref_name }}
         name: HackDuck ${{ github.ref_name }} - HTTP Request Debugger
-               body: |
+        body: |
                  # HackDuck ${{ github.ref_name }} - HTTP Request Debugger
                  
                  ## 🎉 自动发布
