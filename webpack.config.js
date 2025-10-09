@@ -9,57 +9,57 @@ module.exports = {
     content: './src/content.ts',
     devtools: './src/devtools.ts',
     'devtools-app': './src/devtools-app.ts',
-    injected: './src/injected.ts'
+    injected: './src/injected.ts',
   },
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: '[name].js',
-    clean: true
+    clean: true,
   },
   module: {
     rules: [
       {
         test: /\.vue$/,
-        loader: 'vue-loader'
+        loader: 'vue-loader',
       },
       {
         test: /\.ts$/,
         loader: 'ts-loader',
         options: {
-          appendTsSuffixTo: [/\.vue$/]
+          appendTsSuffixTo: [/\.vue$/],
         },
-        exclude: /node_modules/
+        exclude: /node_modules/,
       },
       {
         test: /\.css$/,
-        use: ['style-loader', 'css-loader']
-      }
-    ]
+        use: ['style-loader', 'css-loader'],
+      },
+    ],
   },
   resolve: {
     extensions: ['.ts', '.js', '.vue'],
     alias: {
-      'vue': '@vue/runtime-dom'
-    }
+      'vue': '@vue/runtime-dom',
+    },
   },
   plugins: [
     new VueLoaderPlugin(),
     new HtmlWebpackPlugin({
       template: './src/devtools.html',
       filename: 'devtools.html',
-      chunks: ['devtools']
+      chunks: ['devtools'],
     }),
     new CopyWebpackPlugin({
       patterns: [
         { from: 'src/manifest.json', to: 'manifest.json' },
-        { from: 'src/icons', to: 'icons' }
-      ]
-    })
+        { from: 'src/icons', to: 'icons' },
+      ],
+    }),
   ],
   devtool: 'source-map',
   ignoreWarnings: [
     /Failed to parse source map/,
     /TS18047/,
-    /TS7031/
-  ]
+    /TS7031/,
+  ],
 };
