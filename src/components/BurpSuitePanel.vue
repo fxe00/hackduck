@@ -453,7 +453,8 @@ const sendRequest = async () => {
       return;
     }
     
-    const host = hostLine.split(':')[1].trim();
+    // 正确解析Host头，保留端口号
+    const host = hostLine.substring(5).trim(); // 去掉"Host:"前缀
     const protocol = 'https';
     const fullUrl = `${protocol}://${host}${path}`;
     
