@@ -27,18 +27,18 @@ jobs:
       
     - name: Build Chrome extension
       run: |
-        chmod +x build-chrome.sh
-        ./build-chrome.sh
+        chmod +x scripts/build-chrome.sh
+        ./scripts/build-chrome.sh
         
     - name: Build Firefox extension
       run: |
-        chmod +x build-firefox.sh
-        ./build-firefox.sh
+        chmod +x scripts/build-firefox.sh
+        ./scripts/build-firefox.sh
         
     - name: Build Edge extension
       run: |
-        chmod +x build-edge.sh
-        ./build-edge.sh
+        chmod +x scripts/build-edge.sh
+        ./scripts/build-edge.sh
         
     - name: Get version from tag
       id: get_version
@@ -181,9 +181,9 @@ jobs:
           
           **HackDuck Team** - 让HTTP调试更简单！
         files: |
-          hackduck-chrome-*.zip
-          hackduck-firefox-*.zip
-          hackduck-edge-*.zip
+          releases/hackduck-chrome-*.zip
+          releases/hackduck-firefox-*.zip
+          releases/hackduck-edge-*.zip
         draft: false
         prerelease: false
       env:
