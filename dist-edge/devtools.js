@@ -1,0 +1,2 @@
+"undefined"!=typeof chrome&&chrome.devtools&&chrome.devtools.panels.create("HackDuck","icons/icon48.png","devtools.html",e=>{console.log("HackDuck DevTools panel created")});
+//# sourceMappingURL=devtools.js.map
