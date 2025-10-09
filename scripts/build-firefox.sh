@@ -14,7 +14,7 @@ cat > releases/dist-firefox/manifest.json << 'EOF'
 {
   "manifest_version": 2,
   "name": "HackDuck - HTTP Request Debugger",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A powerful browser extension for HTTP request debugging and manipulation",
   "permissions": [
     "activeTab",
@@ -49,7 +49,38 @@ cat > releases/dist-firefox/manifest.json << 'EOF'
   "applications": {
     "gecko": {
       "id": "hackduck@example.com",
+      "strict_min_version": "78.0",
+      "update_url": "https://github.com/fxe00/hackduck/releases/latest/download/updates.json"
+    }
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "hackduck@example.com",
       "strict_min_version": "78.0"
+    }
+  },
+  "author": "HackDuck Team",
+  "homepage_url": "https://github.com/fxe00/hackduck"
+}
+EOF
+
+# Create Firefox updates.json
+echo "📝 Creating Firefox updates.json..."
+cat > releases/updates.json << 'EOF'
+{
+  "addons": {
+    "hackduck@example.com": {
+      "updates": [
+        {
+          "version": "1.1.0",
+          "update_link": "https://github.com/fxe00/hackduck/releases/download/v1.1.0/hackduck-firefox-v1.1.0.zip",
+          "applications": {
+            "gecko": {
+              "strict_min_version": "78.0"
+            }
+          }
+        }
+      ]
     }
   }
 }
@@ -61,3 +92,4 @@ zip -r ../hackduck-firefox-v1.1.0.zip .
 cd ../..
 
 echo "✅ Firefox build completed: releases/hackduck-firefox-v1.1.0.zip"
+echo "✅ Firefox updates.json created: releases/updates.json"

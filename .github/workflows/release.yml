@@ -188,6 +188,7 @@ jobs:
           releases/hackduck-chrome-*.zip
           releases/hackduck-firefox-*.zip
           releases/hackduck-edge-*.zip
+          releases/updates.json
         draft: false
         prerelease: false
       env:
