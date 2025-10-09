@@ -5,6 +5,10 @@ on:
     tags:
       - 'v*'  # 当推送以v开头的tag时触发
 
+permissions:
+  contents: write  # 允许写入内容（创建Release）
+  packages: write  # 允许写入包
+
 jobs:
   release:
     runs-on: ubuntu-latest
