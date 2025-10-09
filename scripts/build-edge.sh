@@ -2,6 +2,10 @@
 
 echo "🌐 Building HackDuck for Microsoft Edge..."
 
+# Get version from package.json
+VERSION=$(node -p "require('./package.json').version")
+echo "📦 Building version: $VERSION"
+
 # Clean previous builds
 rm -rf releases/dist-edge
 mkdir -p releases/dist-edge
@@ -10,11 +14,11 @@ mkdir -p releases/dist-edge
 cp -r dist/* releases/dist-edge/
 
 # Create Edge-specific manifest
-cat > releases/dist-edge/manifest.json << 'EOF'
+cat > releases/dist-edge/manifest.json << EOF
 {
   "manifest_version": 3,
   "name": "HackDuck - HTTP Request Debugger",
-  "version": "1.1.1",
+  "version": "$VERSION",
   "description": "A powerful browser extension for HTTP request debugging and manipulation",
   "permissions": [
     "activeTab",
@@ -57,7 +61,7 @@ EOF
 
 # Create Edge package
 cd releases/dist-edge
-zip -r ../hackduck-edge-v1.1.1.zip .
+zip -r ../hackduck-edge-v$VERSION.zip .
 cd ../..
 
-echo "✅ Edge build completed: releases/hackduck-edge-v1.1.1.zip"
+echo "✅ Edge build completed: releases/hackduck-edge-v$VERSION.zip"

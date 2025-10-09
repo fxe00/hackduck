@@ -2,6 +2,10 @@
 
 echo "🦊 Building HackDuck for Mozilla Firefox..."
 
+# Get version from package.json
+VERSION=$(node -p "require('./package.json').version")
+echo "📦 Building version: $VERSION"
+
 # Clean previous builds
 rm -rf releases/dist-firefox
 mkdir -p releases/dist-firefox
@@ -10,11 +14,11 @@ mkdir -p releases/dist-firefox
 cp -r dist/* releases/dist-firefox/
 
 # Create Firefox-specific manifest (Manifest V2 for better compatibility)
-cat > releases/dist-firefox/manifest.json << 'EOF'
+cat > releases/dist-firefox/manifest.json << EOF
 {
   "manifest_version": 2,
   "name": "HackDuck - HTTP Request Debugger",
-  "version": "1.1.1",
+  "version": "$VERSION",
   "description": "A powerful browser extension for HTTP request debugging and manipulation",
   "permissions": [
     "activeTab",
@@ -66,14 +70,14 @@ EOF
 
 # Create Firefox updates.json
 echo "📝 Creating Firefox updates.json..."
-cat > releases/updates.json << 'EOF'
+cat > releases/updates.json << EOF
 {
   "addons": {
     "hackduck@example.com": {
       "updates": [
         {
-          "version": "1.1.1",
-          "update_link": "https://github.com/fxe00/hackduck/releases/download/v1.1.0/hackduck-firefox-v1.1.0.zip",
+          "version": "$VERSION",
+          "update_link": "https://github.com/fxe00/hackduck/releases/download/v$VERSION/hackduck-firefox-v$VERSION.zip",
           "applications": {
             "gecko": {
               "strict_min_version": "78.0"
@@ -88,8 +92,8 @@ EOF
 
 # Create Firefox package
 cd releases/dist-firefox
-zip -r ../hackduck-firefox-v1.1.1.zip .
+zip -r ../hackduck-firefox-v$VERSION.zip .
 cd ../..
 
-echo "✅ Firefox build completed: releases/hackduck-firefox-v1.1.1.zip"
+echo "✅ Firefox build completed: releases/hackduck-firefox-v$VERSION.zip"
 echo "✅ Firefox updates.json created: releases/updates.json"

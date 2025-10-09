@@ -2,6 +2,10 @@
 
 echo "🔨 Building HackDuck for Google Chrome..."
 
+# Get version from package.json
+VERSION=$(node -p "require('./package.json').version")
+echo "📦 Building version: $VERSION"
+
 # Clean previous builds
 rm -rf releases/dist-chrome
 mkdir -p releases/dist-chrome
@@ -10,11 +14,11 @@ mkdir -p releases/dist-chrome
 cp -r dist/* releases/dist-chrome/
 
 # Create Chrome-specific manifest
-cat > releases/dist-chrome/manifest.json << 'EOF'
+cat > releases/dist-chrome/manifest.json << EOF
 {
   "manifest_version": 3,
   "name": "HackDuck - HTTP Request Debugger",
-  "version": "1.1.1",
+  "version": "$VERSION",
   "description": "A powerful browser extension for HTTP request debugging and manipulation",
   "permissions": [
     "activeTab",
@@ -57,7 +61,7 @@ EOF
 
 # Create Chrome package
 cd releases/dist-chrome
-zip -r ../hackduck-chrome-v1.1.1.zip .
+zip -r ../hackduck-chrome-v$VERSION.zip .
 cd ../..
 
-echo "✅ Chrome build completed: releases/hackduck-chrome-v1.1.1.zip"
+echo "✅ Chrome build completed: releases/hackduck-chrome-v$VERSION.zip"
