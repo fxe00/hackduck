@@ -1,0 +1,50 @@
+{
+  "name": "hackduck",
+  "version": "1.0.0",
+  "description": "A powerful browser extension for HTTP request debugging and manipulation",
+  "main": "index.js",
+  "scripts": {
+    "build": "webpack --mode production",
+    "dev": "webpack --mode development --watch",
+    "test": "jest",
+    "lint": "eslint src/",
+    "package": "npm run build && zip -r hackduck.zip dist/"
+  },
+  "keywords": [
+    "browser-extension",
+    "http-debugger",
+    "request-interceptor",
+    "api-testing",
+    "vue",
+    "devtools"
+  ],
+  "author": "HackDuck Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/chrome": "^0.0.246",
+    "@types/node": "^24.6.0",
+    "@types/url-parse": "^1.4.11",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "@vitejs/plugin-vue": "^4.4.0",
+    "copy-webpack-plugin": "^11.0.0",
+    "css-loader": "^6.8.1",
+    "eslint": "^8.45.0",
+    "html-webpack-plugin": "^5.5.3",
+    "jest": "^29.6.2",
+    "style-loader": "^3.3.3",
+    "ts-loader": "^9.4.4",
+    "typescript": "^5.1.6",
+    "vue-loader": "^17.4.2",
+    "webpack": "^5.88.2",
+    "webpack-cli": "^5.1.4"
+  },
+  "dependencies": {
+    "@ant-design/icons-vue": "^7.0.0",
+    "ant-design-vue": "^4.0.0",
+    "axios": "^1.5.0",
+    "crypto-js": "^4.2.0",
+    "url-parse": "^1.5.10",
+    "vue": "^3.3.4"
+  }
+}

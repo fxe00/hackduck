@@ -1,0 +1,36 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4CAF50;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2E7D32;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- 背景圆形 -->
+  <circle cx="64" cy="64" r="60" fill="url(#grad1)" stroke="#1B5E20" stroke-width="4"/>
+  
+  <!-- 鸭子头部 -->
+  <ellipse cx="64" cy="45" rx="25" ry="20" fill="#FFC107" stroke="#F57F17" stroke-width="2"/>
+  
+  <!-- 鸭子眼睛 -->
+  <circle cx="58" cy="40" r="3" fill="#000"/>
+  <circle cx="70" cy="40" r="3" fill="#000"/>
+  
+  <!-- 鸭子嘴巴 -->
+  <ellipse cx="64" cy="50" rx="8" ry="4" fill="#FF8F00"/>
+  
+  <!-- 鸭子身体 -->
+  <ellipse cx="64" cy="75" rx="30" ry="25" fill="#FFC107" stroke="#F57F17" stroke-width="2"/>
+  
+  <!-- 网络图标 -->
+  <g transform="translate(35, 85)">
+    <rect x="0" y="0" width="8" height="8" fill="#4CAF50"/>
+    <rect x="10" y="0" width="8" height="8" fill="#4CAF50"/>
+    <rect x="20" y="0" width="8" height="8" fill="#4CAF50"/>
+    <rect x="5" y="10" width="8" height="8" fill="#4CAF50"/>
+    <rect x="15" y="10" width="8" height="8" fill="#4CAF50"/>
+  </g>
+  
+  <!-- 文字 -->
+  <text x="64" y="110" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#1B5E20">HackDuck</text>
+</svg>

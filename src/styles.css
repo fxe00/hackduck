@@ -1,0 +1,372 @@
+/* HackDuck 样式文件 */
+@import './assets/fonts/fonts.css';
+
+/* 自定义样式 */
+.hackduck-app {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: 'HackDuck-Main', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+    'Noto Color Emoji';
+}
+
+.toolbar {
+  padding: 16px;
+  background: #fafafa;
+  border-bottom: 1px solid #d9d9d9;
+}
+
+.main-content {
+  flex: 1;
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  gap: 0;
+}
+
+.request-list-panel,
+.request-detail-panel {
+  height: 100%;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #d9d9d9;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* Ensure content inside scrolls */
+}
+
+.panel-header {
+  padding: 16px;
+  border-bottom: 1px solid #d9d9d9;
+  background: #fafafa;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.panel-header h3 {
+  margin: 0;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+/* 过滤控件样式 */
+.filter-controls {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fafafa;
+}
+
+.current-domain {
+  font-size: 12px;
+  color: #666;
+  font-weight: 500;
+}
+
+/* 编辑器控件样式 */
+.editor-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+/* Burp Suite 模式样式 */
+.burp-mode {
+  padding: 16px;
+  overflow-y: auto;
+  max-height: calc(100vh - 200px);
+}
+
+.burp-mode .request-section,
+.burp-mode .response-section {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.burp-mode h4 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.burp-mode .ant-tabs {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.burp-mode .ant-tabs-content-holder {
+  overflow-y: auto;
+  max-height: calc(100vh - 350px);
+}
+
+/* HackBar 模式样式 */
+.hackbar-mode {
+  padding: 16px;
+}
+
+.hackbar-toolbar {
+  margin-bottom: 16px;
+  display: flex;
+  gap: 8px;
+}
+
+.hackbar-mode .request-section,
+.hackbar-mode .response-section {
+  height: 100%;
+}
+
+.hackbar-mode h4 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.hackbar-mode textarea {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
+  font-size: 13px;
+}
+
+/* 加载状态样式 */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  text-align: center;
+}
+
+.loading-container p {
+  margin-top: 16px;
+  color: #666;
+  font-size: 14px;
+}
+
+/* 无响应体说明样式 */
+.no-response-body {
+  text-align: center;
+  padding: 20px;
+}
+
+.explanation {
+  margin-top: 16px;
+  color: #999;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.request-list {
+  flex: 1;
+  overflow-y: auto; /* Changed from hidden to auto */
+  max-height: calc(100vh - 200px); /* Added max-height */
+}
+
+.request-item {
+  padding: 8px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.request-item:last-child {
+  border-bottom: none;
+}
+
+.request-item:hover {
+  background: #f5f5f5;
+}
+
+.request-item.active {
+  background: #e6f7ff;
+  border-left: 3px solid #1890ff;
+}
+
+.request-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.method-tag {
+  min-width: 50px;
+  text-align: center;
+}
+
+.status-tag {
+  margin-left: auto;
+}
+
+.request-url {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+  word-break: break-all;
+}
+
+.request-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #999;
+}
+
+.request-editor {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: 100%; /* 确保使用全部高度 */
+}
+
+.request-editor .panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.request-editor .panel-header h3 {
+  margin: 0;
+}
+
+.headers-editor {
+  padding: 16px 0;
+}
+
+.header-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  align-items: center;
+}
+
+.empty-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.response-headers .header-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  align-items: center;
+}
+
+.response-headers .header-row span {
+  flex: 1;
+  word-break: break-all;
+}
+
+/* 可拖拽分割线 */
+.resizer {
+  width: 4px;
+  background: #d9d9d9;
+  cursor: col-resize;
+  position: relative;
+  transition: background-color 0.2s;
+}
+
+.resizer:hover {
+  background: #1890ff;
+}
+
+.resizer::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 20px;
+  background: #d9d9d9;
+  border-radius: 1px;
+}
+
+.resizer:hover::after {
+  background: #1890ff;
+}
+
+/* 响应信息区域滚动 */
+.ant-tabs-content-holder {
+  flex: 1;
+  overflow-y: auto;
+  height: 100%; /* 使用全部高度 */
+}
+
+.ant-tabs-tabpane {
+  padding: 16px;
+  overflow-y: auto;
+  height: 100%; /* 使用全部高度 */
+}
+
+/* 新的布局样式 */
+.main-layout {
+  display: flex;
+  height: 100%;
+  width: 100%;
+}
+
+.main-layout .request-list-panel,
+.main-layout .request-detail-panel {
+  flex-shrink: 0;
+  min-width: 200px;
+  height: 100%; /* 确保面板使用全部高度 */
+}
+
+/* 确保请求编辑器完全展开 */
+.request-detail-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.request-detail-panel .request-editor {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden; /* 确保编辑器容器不滚动 */
+}
+
+/* Ant Design Tabs 样式调整 */
+.ant-tabs {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.ant-tabs-content-holder {
+  flex: 1;
+  overflow-y: auto; /* 恢复滚动条 */
+  max-height: calc(100vh - 200px); /* 限制最大高度 */
+}
+
+.ant-tabs-tabpane {
+  height: auto; /* 改为auto，让内容自然展开 */
+  overflow-y: visible; /* 让滚动条在父容器显示 */
+  padding: 16px; /* 确保内容有适当的内边距 */
+}
+
+/* 确保各个标签页内容可以正常滚动 */
+.ant-tabs-tabpane .ant-form,
+.ant-tabs-tabpane .headers-editor,
+.ant-tabs-tabpane .ant-textarea {
+  height: auto;
+  max-height: none;
+}
+
+/* 响应信息区域特殊处理 */
+.ant-tabs-tabpane .response-headers {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.ant-tabs-tabpane .ant-textarea {
+  resize: vertical; /* 允许垂直调整大小 */
+}
