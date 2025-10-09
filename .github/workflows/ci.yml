@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Lint code
+      run: npm run lint
+      
+    - name: Build project
+      run: npm run build
+      
+    - name: Test build artifacts
+      run: |
+        # 检查构建产物是否存在
+        test -f dist/manifest.json
+        test -f dist/background.js
+        test -f dist/content.js
+        test -f dist/devtools.html
+        test -f dist/devtools-app.js
+        test -d dist/icons
+        
+        # 检查图标文件
+        test -f dist/icons/icon16.png
+        test -f dist/icons/icon32.png
+        test -f dist/icons/icon48.png
+        test -f dist/icons/icon128.png
+        test -f dist/icons/icon.svg
+        
+        echo "✅ 所有构建产物检查通过"
