@@ -455,7 +455,15 @@ const sendRequest = async () => {
     
     // 正确解析Host头，保留端口号
     const host = hostLine.substring(5).trim(); // 去掉"Host:"前缀
-    const protocol = 'https';
+    
+    // 从原始请求中提取协议，默认为http
+    let protocol = 'http';
+    if (requestText.value.toLowerCase().includes('https://')) {
+      protocol = 'https';
+    } else if (requestText.value.toLowerCase().includes('http://')) {
+      protocol = 'http';
+    }
+    
     const fullUrl = `${protocol}://${host}${path}`;
     
     // 解析请求头
