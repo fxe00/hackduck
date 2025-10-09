@@ -14,7 +14,7 @@ cat > releases/dist-firefox/manifest.json << 'EOF'
 {
   "manifest_version": 2,
   "name": "HackDuck - HTTP Request Debugger",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "A powerful browser extension for HTTP request debugging and manipulation",
   "permissions": [
     "activeTab",
@@ -72,7 +72,7 @@ cat > releases/updates.json << 'EOF'
     "hackduck@example.com": {
       "updates": [
         {
-          "version": "1.1.0",
+          "version": "1.1.1",
           "update_link": "https://github.com/fxe00/hackduck/releases/download/v1.1.0/hackduck-firefox-v1.1.0.zip",
           "applications": {
             "gecko": {
@@ -88,8 +88,8 @@ EOF
 
 # Create Firefox package
 cd releases/dist-firefox
-zip -r ../hackduck-firefox-v1.1.0.zip .
+zip -r ../hackduck-firefox-v1.1.1.zip .
 cd ../..
 
-echo "✅ Firefox build completed: releases/hackduck-firefox-v1.1.0.zip"
+echo "✅ Firefox build completed: releases/hackduck-firefox-v1.1.1.zip"
 echo "✅ Firefox updates.json created: releases/updates.json"

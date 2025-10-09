@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🚀 Building HackDuck v1.1.0 for all browsers..."
+echo "🚀 Building HackDuck v1.1.1 for all browsers..."
 
 # Build base project
 echo "📦 Building base project..."
@@ -22,8 +22,8 @@ echo ""
 echo "✅ All builds completed!"
 echo ""
 echo "📁 Generated files:"
-echo "  - releases/hackduck-chrome-v1.1.0.zip"
-echo "  - releases/hackduck-firefox-v1.1.0.zip"
-echo "  - releases/hackduck-edge-v1.1.0.zip"
+echo "  - releases/hackduck-chrome-v1.1.1.zip"
+echo "  - releases/hackduck-firefox-v1.1.1.zip"
+echo "  - releases/hackduck-edge-v1.1.1.zip"
 echo ""
 echo "🎉 Ready for GitHub release!"

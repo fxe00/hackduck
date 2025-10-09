@@ -14,7 +14,7 @@ cat > releases/dist-chrome/manifest.json << 'EOF'
 {
   "manifest_version": 3,
   "name": "HackDuck - HTTP Request Debugger",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "A powerful browser extension for HTTP request debugging and manipulation",
   "permissions": [
     "activeTab",
@@ -57,7 +57,7 @@ EOF
 
 # Create Chrome package
 cd releases/dist-chrome
-zip -r ../hackduck-chrome-v1.1.0.zip .
+zip -r ../hackduck-chrome-v1.1.1.zip .
 cd ../..
 
-echo "✅ Chrome build completed: releases/hackduck-chrome-v1.1.0.zip"
+echo "✅ Chrome build completed: releases/hackduck-chrome-v1.1.1.zip"

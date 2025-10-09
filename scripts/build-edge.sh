@@ -14,7 +14,7 @@ cat > releases/dist-edge/manifest.json << 'EOF'
 {
   "manifest_version": 3,
   "name": "HackDuck - HTTP Request Debugger",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "A powerful browser extension for HTTP request debugging and manipulation",
   "permissions": [
     "activeTab",
@@ -57,7 +57,7 @@ EOF
 
 # Create Edge package
 cd releases/dist-edge
-zip -r ../hackduck-edge-v1.1.0.zip .
+zip -r ../hackduck-edge-v1.1.1.zip .
 cd ../..
 
-echo "✅ Edge build completed: releases/hackduck-edge-v1.1.0.zip"
+echo "✅ Edge build completed: releases/hackduck-edge-v1.1.1.zip"
