@@ -14,7 +14,7 @@ cat > releases/dist-edge/manifest.json << 'EOF'
 {
   "manifest_version": 3,
   "name": "HackDuck - HTTP Request Debugger",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A powerful browser extension for HTTP request debugging and manipulation",
   "permissions": [
     "activeTab",
