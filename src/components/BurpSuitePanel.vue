@@ -495,7 +495,7 @@ const sendRequest = async () => {
       const response = await fetch(fullUrl, {
         method: method,
         mode: 'cors', // 尝试cors模式获取真实响应
-        credentials: 'omit',
+        credentials: 'include', // 包含Cookie和认证信息
         headers: {
           'Accept': '*/*',
           'User-Agent': navigator.userAgent,
@@ -552,9 +552,11 @@ const sendRequest = async () => {
           console.log('Trying proxy:', proxyUrl);
           const proxyResponse = await fetch(proxyUrl, {
             method: method,
+            credentials: 'include', // 包含Cookie和认证信息
             headers: {
               'Accept': '*/*',
-              'User-Agent': navigator.userAgent
+              'User-Agent': navigator.userAgent,
+              ...headers // 包含原始请求的所有头部信息
             },
             body: body || undefined
           });
