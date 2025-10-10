@@ -433,53 +433,15 @@ const sendRequest = async () => {
     return;
   }
   
-  if (!requestText.value.trim()) {
-    message.warning('请求内容为空，请先加载一个请求');
-    return;
-  }
-  
   isSendingRequest.value = true;
   
   try {
-    // 解析请求文本
-    const lines = requestText.value.split('\n');
-    const [requestLine, ...rest] = lines;
-    const [method, path] = requestLine.split(' ');
-    
-    // 解析Host头
-    const hostLine = rest.find(line => line.toLowerCase().startsWith('host:'));
-    if (!hostLine) {
-      message.error('无法找到Host头');
-      return;
-    }
-    
-    // 正确解析Host头，保留端口号
-    const host = hostLine.substring(5).trim(); // 去掉"Host:"前缀
-    
-    // 从原始请求中提取协议，默认为http
-    let protocol = 'http';
-    if (requestText.value.toLowerCase().includes('https://')) {
-      protocol = 'https';
-    } else if (requestText.value.toLowerCase().includes('http://')) {
-      protocol = 'http';
-    }
-    
-    const fullUrl = `${protocol}://${host}${path}`;
-    
-    // 解析请求头
-    const headers: Record<string, string> = {};
-    const emptyLineIndex = rest.findIndex(line => line.trim() === '');
-    const headerLines = rest.slice(0, emptyLineIndex > -1 ? emptyLineIndex : rest.length);
-    
-    for (const line of headerLines) {
-      if (line.includes(':')) {
-        const [key, ...valueParts] = line.split(':');
-        headers[key.trim()] = valueParts.join(':').trim();
-      }
-    }
-    
-    // 解析请求体
-    const body = emptyLineIndex > -1 ? rest.slice(emptyLineIndex + 1).join('\n') : '';
+    // 直接使用原始请求数据，确保完整性
+    const originalRequest = selectedRequest.value;
+    const method = originalRequest.method;
+    const fullUrl = originalRequest.url;
+    const headers = { ...originalRequest.headers }; // 复制所有原始头部
+    const body = originalRequest.body || '';
     
     console.log('🚀 Sending single request:', {
       url: fullUrl,
