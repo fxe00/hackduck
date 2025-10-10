@@ -497,9 +497,7 @@ const sendRequest = async () => {
         mode: 'cors', // 尝试cors模式获取真实响应
         credentials: 'include', // 包含Cookie和认证信息
         headers: {
-          'Accept': '*/*',
-          'User-Agent': navigator.userAgent,
-          ...headers
+          ...headers // 使用原始请求的所有头部信息，不覆盖
         },
         body: body || undefined
       });
@@ -554,9 +552,7 @@ const sendRequest = async () => {
             method: method,
             credentials: 'include', // 包含Cookie和认证信息
             headers: {
-              'Accept': '*/*',
-              'User-Agent': navigator.userAgent,
-              ...headers // 包含原始请求的所有头部信息
+              ...headers // 使用原始请求的所有头部信息，不覆盖
             },
             body: body || undefined
           });
