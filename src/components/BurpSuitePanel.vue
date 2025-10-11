@@ -111,7 +111,7 @@
             <h4>请求编辑器</h4>
             <div 
               class="formatted-request-editor"
-              :style="{ height: Math.max(150, editorHeight - 60) + 'px' }"
+              :style="{ height: Math.max(200, editorHeight - 40) + 'px' }"
               @contextmenu="handleRightClick"
               @keydown="handleKeyDown"
               ref="requestTextareaRef"
@@ -134,7 +134,7 @@
             <a-textarea
               v-else
               :value="responseText"
-              :style="{ height: Math.max(150, editorHeight - 60) + 'px' }"
+              :style="{ height: Math.max(200, editorHeight - 40) + 'px' }"
               readonly
               class="readonly-response"
               placeholder="响应内容..."

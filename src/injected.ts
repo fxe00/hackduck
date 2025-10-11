@@ -76,18 +76,29 @@ XMLHttpRequest.prototype.open = function(method: string, url: string | URL, asyn
 XMLHttpRequest.prototype.send = function(data) {
   const extendedThis = this as ExtendedXMLHttpRequest;
   
+  // 获取请求头信息
+  const headers: Record<string, string> = {};
+  
+  // 尝试获取所有请求头
+  if (this.getAllRequestHeaders) {
+    const allHeaders = this.getAllRequestHeaders();
+    if (allHeaders) {
+      allHeaders.split('\r\n').forEach(header => {
+        const [key, value] = header.split(': ');
+        if (key && value) {
+          headers[key] = value;
+        }
+      });
+    }
+  }
+  
   // 发送请求信息
   window.postMessage({
     type: 'HACKDUCK_REQUEST',
     data: {
       url: extendedThis._hackduckUrl,
       method: extendedThis._hackduckMethod,
-      headers: this.getAllResponseHeaders ? 
-        this.getAllResponseHeaders().split('\r\n').reduce((acc: Record<string, string>, header: string) => {
-          const [key, value] = header.split(': ');
-          if (key && value) acc[key] = value;
-          return acc;
-        }, {}) : {},
+      headers: headers,
       body: data
     }
   }, '*');
