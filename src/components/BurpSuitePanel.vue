@@ -109,14 +109,17 @@
         <a-col :span="12">
           <div class="request-editor" :style="{ height: editorHeight + 'px' }">
             <h4>请求编辑器</h4>
-            <a-textarea
-              v-model:value="requestText"
+            <div 
+              class="formatted-request-editor"
               :style="{ height: Math.max(150, editorHeight - 60) + 'px' }"
-              placeholder="原始HTTP请求内容...&#10;&#10;例如：&#10;GET /api/users HTTP/1.1&#10;Host: example.com&#10;User-Agent: Mozilla/5.0...&#10;Accept: application/json"
               @contextmenu="handleRightClick"
               @keydown="handleKeyDown"
               ref="requestTextareaRef"
-            />
+              contenteditable="true"
+              @input="handleRequestTextChange"
+            >
+              <div v-html="formattedRequestText"></div>
+            </div>
           </div>
         </a-col>
         
@@ -200,6 +203,33 @@ const maxHistorySize = 50;
 
 // 动态高度相关
 const editorHeight = ref(400);
+
+// 格式化请求文本
+const formattedRequestText = computed(() => {
+  if (!requestText.value) return '';
+  
+  const lines = requestText.value.split('\n');
+  const formattedLines = lines.map(line => {
+    // 检查是否是HTTP header行 (格式: Key: Value)
+    if (line.includes(': ') && !line.startsWith('HTTP/')) {
+      const colonIndex = line.indexOf(': ');
+      if (colonIndex > 0) {
+        const key = line.substring(0, colonIndex);
+        const value = line.substring(colonIndex + 2);
+        return `<strong>${key}:</strong> ${value}`;
+      }
+    }
+    return line;
+  });
+  
+  return formattedLines.join('<br>');
+});
+
+// 处理请求文本变化
+const handleRequestTextChange = (event: Event) => {
+  const target = event.target as HTMLElement;
+  requestText.value = target.innerText;
+};
 
 // 计算动态高度
 const calculateEditorHeight = () => {
@@ -371,9 +401,10 @@ const loadRequestToEditor = (request: HttpRequest) => {
   requestLines.push(`${request.method} ${url.pathname}${url.search} HTTP/1.1`);
   requestLines.push(`Host: ${url.host}`);
   
-  // 请求头
+  // 请求头 - 格式化显示
   if (request.headers) {
     for (const [key, value] of Object.entries(request.headers)) {
+      // 使用特殊格式来区分键和值
       requestLines.push(`${key}: ${value}`);
     }
   }
@@ -887,7 +918,46 @@ onUnmounted(() => {
   position: relative;
 }
 
-.request-editor .ant-textarea,
+.request-editor .ant-textarea {
+  flex: 1;
+  overflow-y: auto;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  font-family: 'JetBrains Mono', 'Consolas', 'Monaco', monospace;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* HTTP请求格式化样式 */
+.request-editor .ant-textarea {
+  position: relative;
+}
+
+/* 格式化请求编辑器样式 */
+.formatted-request-editor {
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  padding: 8px 12px;
+  background-color: #fff;
+  font-family: 'JetBrains Mono', 'Consolas', 'Monaco', monospace;
+  font-size: 13px;
+  line-height: 1.4;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  outline: none;
+}
+
+.formatted-request-editor:focus {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.formatted-request-editor strong {
+  font-weight: 600;
+  color: #1890ff;
+}
+
 .response-viewer .ant-textarea {
   flex: 1;
   overflow-y: auto;
