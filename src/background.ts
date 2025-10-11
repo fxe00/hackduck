@@ -416,6 +416,8 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
         url: details.url,
         method: details.method,
         headersCount: Object.keys(headers).length,
+        hasCookie: !!headers['Cookie'] || !!headers['cookie'],
+        cookieValue: headers['Cookie'] || headers['cookie'] || 'No cookie',
         headers: headers
       });
     }
