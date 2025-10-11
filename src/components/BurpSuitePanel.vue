@@ -109,17 +109,15 @@
         <a-col :span="12">
           <div class="request-editor" :style="{ height: editorHeight + 'px' }">
             <h4>请求编辑器</h4>
-            <div 
-              class="formatted-request-editor"
+            <a-textarea
+              v-model:value="requestText"
               :style="{ height: Math.max(200, editorHeight - 40) + 'px' }"
+              placeholder="原始HTTP请求内容...&#10;&#10;例如：&#10;GET /api/users HTTP/1.1&#10;Host: example.com&#10;User-Agent: Mozilla/5.0...&#10;Accept: application/json"
               @contextmenu="handleRightClick"
               @keydown="handleKeyDown"
               ref="requestTextareaRef"
-              contenteditable="true"
-              @input="handleRequestTextChange"
-            >
-              <div v-html="formattedRequestText"></div>
-            </div>
+              class="http-request-editor"
+            />
           </div>
         </a-col>
         
@@ -393,6 +391,16 @@ const loadRequestToEditor = (request: HttpRequest) => {
   // 设置选中的方法
   selectedMethod.value = request.method;
   
+  // 调试信息：检查请求头
+  console.log('🔍 Loading request to editor:', {
+    url: request.url,
+    method: request.method,
+    headersCount: request.headers ? Object.keys(request.headers).length : 0,
+    hasCookie: request.headers && (!!request.headers['Cookie'] || !!request.headers['cookie']),
+    cookieValue: request.headers && (request.headers['Cookie'] || request.headers['cookie'] || 'No cookie'),
+    allHeaders: request.headers
+  });
+  
   // 将请求转换为原始HTTP格式
   const url = new URL(request.url);
   let requestLines = [];
@@ -418,6 +426,8 @@ const loadRequestToEditor = (request: HttpRequest) => {
   }
   
   requestText.value = requestLines.join('\n');
+  
+  console.log('📝 Final request text:', requestText.value);
   
   // 加载响应
   loadResponseToViewer(request);
@@ -933,29 +943,34 @@ onUnmounted(() => {
   position: relative;
 }
 
-/* 格式化请求编辑器样式 */
-.formatted-request-editor {
-  border: 1px solid #d9d9d9;
-  border-radius: 6px;
-  padding: 8px 12px;
-  background-color: #fff;
-  font-family: 'JetBrains Mono', 'Consolas', 'Monaco', monospace;
-  font-size: 13px;
-  line-height: 1.4;
-  overflow-y: auto;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  outline: none;
+/* HTTP请求编辑器样式 */
+.http-request-editor {
+  font-family: 'JetBrains Mono', 'Consolas', 'Monaco', monospace !important;
+  font-size: 13px !important;
+  line-height: 1.4 !important;
+  overflow-y: auto !important;
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  resize: vertical !important;
 }
 
-.formatted-request-editor:focus {
-  border-color: #1890ff;
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
-}
-
-.formatted-request-editor strong {
-  font-weight: 600;
-  color: #1890ff;
+/* 为HTTP header行添加特殊样式 */
+.http-request-editor::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  background: 
+    /* 为header行添加背景色 */
+    repeating-linear-gradient(
+      transparent 0,
+      transparent 1.4em,
+      rgba(24, 144, 255, 0.02) 1.4em,
+      rgba(24, 144, 255, 0.02) calc(1.4em + 1px)
+    );
 }
 
 .response-viewer .ant-textarea {
