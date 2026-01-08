@@ -148,6 +148,94 @@ hackduck/
 - Firefox 78+
 - Edge 88+
 
+## 已知问题和限制
+
+### 当前限制
+
+1. **响应体获取限制**
+
+   - 对于页面直接加载的资源（如 `<img>`, `<script>`, `<link>` 等），由于浏览器安全限制，无法自动获取响应体
+   - 需要通过点击"Send Request"按钮手动发送请求才能获取完整的响应体
+   - 只有通过 JavaScript 发起的请求（fetch/XHR）才能自动捕获响应体
+
+2. **CORS 限制**
+
+   - 跨域请求可能受到 CORS 策略限制
+   - 某些请求可能需要通过代理才能成功发送
+
+3. **WebSocket 支持**
+   - 目前仅支持捕获 WebSocket 握手请求，不支持完整的 WebSocket 消息拦截
+
+### 未来计划
+
+我们正在积极改进 HackDuck，计划在未来的版本中解决以下问题：
+
+1. **响应体自动捕获优化**
+
+   - 探索使用 Chrome DevTools Protocol (CDP) 来获取所有请求的响应体
+   - 改进 injected script 的注入时机和覆盖范围
+   - 支持更多类型的请求响应捕获
+
+2. **功能扩展**
+
+   - **Burp 模式增强**：
+     - 支持请求/响应对比功能
+     - 添加请求重放历史记录
+     - 支持批量请求操作
+     - 添加请求导出/导入功能
+   - **HackBar 模式增强**：
+     - 支持请求模板功能
+     - 添加常用请求头预设
+     - 支持请求历史记录
+     - 增强用户笔记功能（支持 Markdown）
+
+3. **性能和体验优化**
+
+   - 优化大量请求时的性能
+   - 改进 UI 响应速度
+   - 添加更多自定义选项
+
+4. **WebSocket 完整支持**
+   - 支持 WebSocket 消息的实时拦截和编辑
+   - 支持 WebSocket 连接管理
+
+## 贡献和反馈
+
+我们非常欢迎社区贡献和反馈！
+
+### 反馈问题
+
+如果你发现了 bug 或有功能建议，请通过以下方式反馈：
+
+1. **提交 Issue**
+
+   - 访问 [GitHub Issues](https://github.com/fxe00/hackduck/issues)
+   - 点击 "New Issue" 创建新问题
+   - 详细描述问题或建议，包括：
+     - 问题描述
+     - 复现步骤
+     - 预期行为
+     - 实际行为
+     - 浏览器版本和扩展版本
+
+2. **功能建议**
+   - 欢迎提出新功能建议
+   - 描述使用场景和预期效果
+
+### 贡献代码
+
+1. Fork 本项目
+2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 开启 Pull Request
+
+### 给项目点 Star ⭐
+
+如果这个项目对你有帮助，欢迎给项目点个 Star！你的支持是我们持续改进的动力。
+
+[![GitHub stars](https://img.shields.io/github/stars/fxe00/hackduck.svg?style=social&label=Star)](https://github.com/fxe00/hackduck)
+
 ## 许可证
 
 MIT License
