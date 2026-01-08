@@ -308,7 +308,7 @@ onUnmounted(() => {
   align-items: center;
   padding: 8px 12px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   color: #333;
   transition: background-color 0.2s;
 }
@@ -319,6 +319,6 @@ onUnmounted(() => {
 
 .menu-icon {
   margin-right: 8px;
-  font-size: 16px;
+  font-size: 15px;
 }
 </style>

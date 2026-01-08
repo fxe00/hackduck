@@ -699,7 +699,7 @@ watch([headerKeys, headerValues], updateRequestHeaders, { deep: true });
 
 .load-section h4 {
   margin: 0 0 8px 0;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -719,7 +719,7 @@ watch([headerKeys, headerValues], updateRequestHeaders, { deep: true });
 
 .request-editor h4 {
   margin: 0 0 8px 0;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -727,6 +727,7 @@ watch([headerKeys, headerValues], updateRequestHeaders, { deep: true });
 .request-editor .ant-textarea {
   resize: vertical;
   overflow-y: auto;
+  font-weight: 600;
 }
 
 .headers-editor {

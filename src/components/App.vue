@@ -11,12 +11,6 @@
         <!-- 中间：操作按钮组 -->
         <a-col :span="12">
           <div class="toolbar-actions">
-            <a-switch 
-              v-model:checked="isIntercepting" 
-              checked-children="拦截请求" 
-              un-checked-children="停止拦截"
-              @change="toggleIntercept"
-            />
             <a-button @click="clearRequests" :icon="h(DeleteOutlined)">清空</a-button>
             <a-button @click="exportRequests" :icon="h(DownloadOutlined)">导出</a-button>
           </div>
@@ -64,7 +58,6 @@ import BurpSuitePanel from './BurpSuitePanel.vue';
 import HackBarPanel from './HackBarPanel.vue';
 
 // 响应式数据
-const isIntercepting = ref(true); // 默认开启拦截
 const requests = ref<HttpRequest[]>([]);
 const currentDomain = ref(''); // 当前域名
 const currentMode = ref<'burp' | 'hackbar'>('burp'); // 当前模式
@@ -74,14 +67,6 @@ const modeSelectorRef = ref();
 const handleModeChange = (mode: 'burp' | 'hackbar') => {
   currentMode.value = mode;
   console.log('🔄 Mode changed to:', mode);
-};
-
-const toggleIntercept = (checked: boolean) => {
-  isIntercepting.value = checked;
-  chrome.runtime.sendMessage({
-    type: 'TOGGLE_INTERCEPT',
-    data: { intercepting: checked }
-  });
 };
 
 const getCurrentDomain = () => {
@@ -119,12 +104,6 @@ const exportRequests = () => {
 
 // 生命周期
 onMounted(() => {
-  // 自动开启拦截
-  chrome.runtime.sendMessage({
-    type: 'TOGGLE_INTERCEPT',
-    data: { intercepting: true }
-  });
-  
   // 获取当前域名
   getCurrentDomain();
   

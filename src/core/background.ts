@@ -201,10 +201,6 @@ async function handleHackBarRequest(data: any) {
 // 监听来自devtools的消息
 chrome.runtime.onMessage.addListener((message: Message, sender, sendResponse) => {
   switch (message.type) {
-    case 'TOGGLE_INTERCEPT':
-      isIntercepting = message.data.intercepting;
-      console.log('Intercepting toggled:', isIntercepting);
-      break;
     case 'CLEAR_REQUESTS':
       // 清除所有超时处理
       pendingTimeouts.forEach((timeoutId) => {

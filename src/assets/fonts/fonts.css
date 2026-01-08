@@ -30,7 +30,7 @@
 /* 全局字体应用 */
 .hackduck-app {
   font-family: 'HackDuck-Main', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 /* 代码区域字体 */
@@ -44,7 +44,7 @@
 .ant-select-selector,
 .ant-form-item-control-input {
   font-family: 'HackDuck-Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.6;
 }
 
@@ -85,28 +85,34 @@ h1, h2, h3, h4, h5, h6 {
 .hackduck-app input[type="url"],
 .hackduck-app input[type="email"] {
   font-family: 'HackDuck-Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
-  font-size: 13px !important;
+  font-size: 12px !important;
   line-height: 1.6 !important;
 }
 
 /* 请求编辑器特定样式 */
-.request-editor .ant-textarea,
+.request-editor .ant-textarea {
+  font-family: 'HackDuck-Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  line-height: 1.6 !important;
+}
+
 .response-viewer .ant-textarea {
   font-family: 'HackDuck-Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
-  font-size: 13px !important;
+  font-size: 12px !important;
   line-height: 1.6 !important;
 }
 
 /* Send Request按钮样式调整 */
 .editor-toolbar .ant-btn {
-  font-size: 12px !important;
+  font-size: 11px !important;
   padding: 4px 12px !important;
   height: auto !important;
 }
 
 /* HackBar模式按钮样式调整 */
 .load-buttons .ant-btn {
-  font-size: 12px !important;
+  font-size: 11px !important;
   padding: 4px 12px !important;
   height: auto !important;
 }
@@ -137,19 +143,19 @@ h1, h2, h3, h4, h5, h6 {
 .toolbar .ant-radio-group,
 .toolbar .ant-switch {
   font-family: 'HackDuck-Main', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif !important;
-  font-size: 12px !important;
+  font-size: 11px !important;
   font-weight: 600 !important;
 }
 
 .toolbar .ant-btn {
   padding: 3px 10px !important;
   height: 28px !important;
-  font-size: 12px !important;
+  font-size: 11px !important;
   font-weight: 600 !important;
 }
 
 .toolbar .ant-radio-button-wrapper {
-  font-size: 12px !important;
+  font-size: 11px !important;
   padding: 1px 6px !important;
   height: 24px !important;
   font-weight: 600 !important;
@@ -157,13 +163,13 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .toolbar .ant-switch {
-  font-size: 12px !important;
+  font-size: 11px !important;
   font-weight: 600 !important;
 }
 
 .toolbar .current-domain {
   font-family: 'HackDuck-Main', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif !important;
-  font-size: 12px !important;
+  font-size: 11px !important;
   font-weight: 600 !important;
 }
 

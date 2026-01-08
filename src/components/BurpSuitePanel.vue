@@ -1,9 +1,17 @@
 <template>
   <div class="burp-suite-panel">
     <!-- 左侧：请求列表 -->
-    <div class="request-list-panel" :style="{ width: leftWidth + '%' }">
+    <div class="request-list-panel" :class="{ collapsed: isListCollapsed }" :style="{ width: isListCollapsed ? '0' : leftWidth + '%' }">
       <div class="panel-header">
         <h3>请求列表 ({{ filteredRequests.length }})</h3>
+        <a-button 
+          type="text" 
+          size="small" 
+          :icon="h(MenuFoldOutlined)"
+          @click="toggleListCollapse"
+          class="collapse-btn"
+          title="收缩列表"
+        />
       </div>
       
       <!-- 过滤控件 -->
@@ -29,8 +37,8 @@
           <a-col :span="7">
             <a-switch 
               v-model:checked="hideStaticResources" 
-              checked-children="隐藏静态资源" 
-              un-checked-children="显示静态资源"
+              checked-children="静态资源" 
+              un-checked-children="静态资源"
               size="small"
             />
           </a-col>
@@ -74,10 +82,20 @@
     </div>
 
     <!-- 可拖拽分割线 -->
-    <div class="resizer" @mousedown="startResize"></div>
+    <div class="resizer" v-if="!isListCollapsed" @mousedown="startResize"></div>
+    
+    <!-- 展开按钮（当列表收缩时显示） -->
+    <div class="expand-button" v-if="isListCollapsed" @click="toggleListCollapse">
+      <a-button 
+        type="text" 
+        size="small" 
+        :icon="h(MenuUnfoldOutlined)"
+        title="展开列表"
+      />
+    </div>
 
     <!-- 右侧：编辑器 -->
-    <div class="editor-panel" :style="{ width: rightWidth + '%' }">
+    <div class="editor-panel" :style="{ width: isListCollapsed ? '100%' : rightWidth + '%' }">
       <div class="editor-toolbar">
         <a-button 
           type="primary" 
@@ -160,7 +178,9 @@ import { message } from 'ant-design-vue';
 import { 
   SearchOutlined, 
   SendOutlined, 
-  EditOutlined 
+  EditOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined
 } from '@ant-design/icons-vue';
 import type { HttpRequest } from '../types';
 import { URLParser } from '../utils/urlParser';
@@ -176,7 +196,7 @@ const props = defineProps<{
 const selectedRequest = ref<HttpRequest | null>(null);
 const filterText = ref('');
 const showCurrentDomainOnly = ref(true); // 默认显示当前域名
-const hideStaticResources = ref(true);
+const hideStaticResources = ref(false);
 const requestText = ref('');
 const responseText = ref('');
 const isSendingRequest = ref(false);
@@ -186,6 +206,9 @@ const selectedMethod = ref<string>('');
 const leftWidth = ref(30);
 const rightWidth = ref(70);
 const isResizing = ref(false);
+
+// 列表收缩状态
+const isListCollapsed = ref(false); // 默认展开
 
 // 右键菜单相关
 const contextMenuVisible = ref(false);
@@ -260,7 +283,7 @@ const filteredRequests = computed(() => {
   let filtered = props.requests;
   
   // 静态资源过滤
-  if (hideStaticResources.value) {
+  if (!hideStaticResources.value) {
     filtered = filtered.filter(req => {
       return !URLParser.shouldFilter(req.url);
     });
@@ -288,6 +311,11 @@ const filteredRequests = computed(() => {
   
   return filtered;
 });
+
+// 切换列表收缩/展开
+const toggleListCollapse = () => {
+  isListCollapsed.value = !isListCollapsed.value;
+};
 
 // 方法
 const selectRequest = (request: HttpRequest) => {
@@ -801,6 +829,7 @@ onUnmounted(() => {
   border: 1px solid #d9d9d9;
   border-radius: 6px;
   overflow: hidden;
+  position: relative;
 }
 
 /* 动态高度支持 */
@@ -829,18 +858,54 @@ onUnmounted(() => {
   border-right: 1px solid #d9d9d9;
   display: flex;
   flex-direction: column;
+  transition: width 0.3s ease;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.request-list-panel.collapsed {
+  border-right: none;
+  min-width: 0;
+  width: 0 !important;
+}
+
+.request-list-panel.collapsed .panel-header,
+.request-list-panel.collapsed .filter-controls,
+.request-list-panel.collapsed .request-list {
+  opacity: 0;
+  pointer-events: none;
+  overflow: hidden;
 }
 
 .panel-header {
   padding: 12px 16px;
   border-bottom: 1px solid #d9d9d9;
   background-color: #fafafa;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .panel-header h3 {
   margin: 0;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
+  flex: 1;
+}
+
+.collapse-btn {
+  color: #666;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.collapse-btn:hover {
+  color: #1890ff;
+  background-color: #f0f0f0;
 }
 
 .filter-controls {
@@ -884,13 +949,13 @@ onUnmounted(() => {
 }
 
 .method-tag {
-  font-size: 12px;
+  font-size: 11px;
   min-width: 50px;
   text-align: center;
 }
 
 .url {
-  font-size: 12px;
+  font-size: 11px;
   color: #666;
   word-break: break-all;
 }
@@ -898,13 +963,14 @@ onUnmounted(() => {
 .request-meta {
   display: flex;
   justify-content: space-between;
-  font-size: 11px;
+  font-size: 10px;
   color: #999;
 }
 
 .editor-panel {
   display: flex;
   flex-direction: column;
+  transition: width 0.3s ease;
 }
 
 .editor-toolbar {
@@ -918,7 +984,7 @@ onUnmounted(() => {
 .request-editor h4,
 .response-viewer h4 {
   margin: 0 0 8px 0;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
 }
 
@@ -942,7 +1008,7 @@ onUnmounted(() => {
 .response-viewer h4 {
   flex-shrink: 0;
   margin: 0 0 8px 0;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
 }
 
@@ -958,7 +1024,8 @@ onUnmounted(() => {
   word-wrap: break-word;
   white-space: pre-wrap;
   font-family: 'JetBrains Mono', 'Consolas', 'Monaco', monospace;
-  font-size: 13px;
+  font-size: 12px;
+  font-weight: 600;
   line-height: 1.4;
 }
 
@@ -970,7 +1037,8 @@ onUnmounted(() => {
 /* HTTP请求编辑器样式 */
 .http-request-editor {
   font-family: 'JetBrains Mono', 'Consolas', 'Monaco', monospace !important;
-  font-size: 13px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
   line-height: 1.4 !important;
   overflow-y: auto !important;
   white-space: pre-wrap !important;
@@ -1024,7 +1092,7 @@ onUnmounted(() => {
 .loading-container p {
   margin-top: 16px;
   color: #666;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .resizer {
@@ -1036,5 +1104,42 @@ onUnmounted(() => {
 
 .resizer:hover {
   background-color: #1890ff;
+}
+
+/* 展开按钮样式（当列表收缩时显示） */
+.expand-button {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  background-color: #fff;
+  border: 1px solid #d9d9d9;
+  border-left: none;
+  border-radius: 0 4px 4px 0;
+  padding: 8px 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+}
+
+.expand-button:hover {
+  background-color: #e6f7ff;
+  border-color: #1890ff;
+  box-shadow: 2px 0 6px rgba(24, 144, 255, 0.2);
+}
+
+.expand-button .ant-btn {
+  color: #666;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.expand-button:hover .ant-btn {
+  color: #1890ff;
 }
 </style>

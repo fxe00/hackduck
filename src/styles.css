@@ -47,7 +47,7 @@
 
 .panel-header h3 {
   margin: 0;
-  font-size: 14px;
+  font-size: 13px;
   color: rgba(0, 0, 0, 0.85);
 }
 
@@ -59,7 +59,7 @@
 }
 
 .current-domain {
-  font-size: 12px;
+  font-size: 11px;
   color: #666;
   font-weight: 500;
 }
@@ -87,7 +87,7 @@
 
 .burp-mode h4 {
   margin: 0 0 12px 0;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: rgba(0, 0, 0, 0.85);
 }
@@ -121,14 +121,14 @@
 
 .hackbar-mode h4 {
   margin: 0 0 12px 0;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: rgba(0, 0, 0, 0.85);
 }
 
 .hackbar-mode textarea {
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 /* 加载状态样式 */
@@ -144,7 +144,7 @@
 .loading-container p {
   margin-top: 16px;
   color: #666;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 /* 无响应体说明样式 */
@@ -156,7 +156,7 @@
 .explanation {
   margin-top: 16px;
   color: #999;
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1.5;
 }
 
@@ -202,7 +202,7 @@
 }
 
 .request-url {
-  font-size: 12px;
+  font-size: 11px;
   color: rgba(0, 0, 0, 0.45);
   word-break: break-all;
 }
@@ -210,7 +210,7 @@
 .request-meta {
   display: flex;
   justify-content: space-between;
-  font-size: 11px;
+  font-size: 10px;
   color: #999;
 }
 
