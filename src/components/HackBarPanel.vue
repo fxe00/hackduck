@@ -3,28 +3,31 @@
     <div class="hackbar-content-wrapper">
       <!-- 左侧：主要功能区域 (75%) -->
       <div class="hackbar-main-content">
-        <!-- Load 操作区域 -->
-        <div class="load-section">
-      <h4>当前页面请求操作</h4>
-      <div class="load-buttons">
-        <a-button @click="loadCurrentRequest" :icon="h(DownloadOutlined)" type="primary">
-          Load Current Page
-        </a-button>
-        <a-button 
-          @click="sendRequest" 
-          :icon="h(SendOutlined)"
-          :loading="isSendingRequest"
-          :disabled="isSendingRequest || !editableRequest"
-          type="primary"
-        >
-          {{ isSendingRequest ? '发送中...' : 'Send Request' }}
-        </a-button>
-      </div>
-    </div>
-
-    <!-- 请求编辑器 -->
-    <div class="request-editor">
-      <h4>请求编辑器</h4>
+        <!-- 请求编辑器 -->
+        <div class="request-editor">
+          <div class="editor-header">
+            <h4>请求编辑器</h4>
+            <div class="editor-actions">
+              <a-button 
+                @click="loadCurrentRequest" 
+                :icon="h(DownloadOutlined)" 
+                size="small"
+                type="default"
+              >
+                Load
+              </a-button>
+              <a-button 
+                @click="sendRequest" 
+                :icon="h(SendOutlined)"
+                :loading="isSendingRequest"
+                :disabled="isSendingRequest || !editableRequest"
+                size="small"
+                type="primary"
+              >
+                {{ isSendingRequest ? '发送中...' : 'Send' }}
+              </a-button>
+            </div>
+          </div>
       <a-form :model="editableRequest" layout="vertical" v-if="editableRequest" size="small">
         <a-row :gutter="12">
           <a-col :span="6">
@@ -799,55 +802,40 @@ watch([headerKeys, headerValues], updateRequestHeaders, { deep: true });
   min-height: 0; /* 允许flex子元素缩小 */
 }
 
-.load-section {
+.editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 12px;
-  padding: 12px 16px;
-  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-  border-radius: 8px;
-  border: 1px solid #e8e8e8;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  transition: all 0.3s ease;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e8e8e8;
 }
 
-.load-section:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  transform: translateY(-1px);
-}
-
-.load-section h4 {
-  margin: 0 0 8px 0;
-  font-size: 11px;
+.editor-header h4 {
+  margin: 0;
+  font-size: 12px;
   font-weight: 600;
   color: rgba(0, 0, 0, 0.85);
   letter-spacing: 0.2px;
 }
 
-.load-buttons {
+.editor-actions {
   display: flex;
   gap: 8px;
-  flex-wrap: wrap;
 }
 
-.load-buttons .ant-btn {
-  border-radius: 6px;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+.editor-actions .ant-btn {
+  border-radius: 4px;
+  font-size: 10px;
+  height: 24px;
+  padding: 0 12px;
   font-weight: 500;
-  font-size: 11px;
+  transition: all 0.2s ease;
 }
 
-.load-buttons .ant-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-}
-
-.load-buttons .ant-btn-primary {
-  background: linear-gradient(135deg, #1890ff 0%, #40a9ff 100%);
-  border: none;
-}
-
-.load-buttons .ant-btn-primary:hover {
-  background: linear-gradient(135deg, #40a9ff 0%, #1890ff 100%);
+.editor-actions .ant-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 .request-editor {
