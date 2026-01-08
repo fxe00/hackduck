@@ -134,16 +134,87 @@
         <!-- 左侧：请求编辑器 -->
         <a-col :span="12">
           <div class="request-editor" :style="{ height: editorHeight + 'px' }">
-            <h4>请求编辑器</h4>
-            <a-textarea
-              v-model:value="requestText"
-              :style="{ height: Math.max(200, editorHeight - 40) + 'px' }"
-              placeholder="原始HTTP请求内容...&#10;&#10;例如：&#10;GET /api/users HTTP/1.1&#10;Host: example.com&#10;User-Agent: Mozilla/5.0...&#10;Accept: application/json"
-              @contextmenu="handleRightClick"
-              @keydown="handleKeyDown"
-              ref="requestTextareaRef"
-              class="http-request-editor"
-            />
+            <div class="request-editor-header">
+              <h4>请求编辑器</h4>
+              <a-button-group size="small">
+                <a-button 
+                  :type="requestViewMode === 'text' ? 'primary' : 'default'"
+                  :icon="h(FileTextOutlined)"
+                  @click="requestViewMode = 'text'"
+                  title="文本视图"
+                >
+                  文本
+                </a-button>
+                <a-button 
+                  :type="requestViewMode === 'table' ? 'primary' : 'default'"
+                  :icon="h(TableOutlined)"
+                  @click="requestViewMode = 'table'"
+                  title="表格视图"
+                >
+                  表格
+                </a-button>
+              </a-button-group>
+            </div>
+            
+            <!-- 文本视图 -->
+            <div v-if="requestViewMode === 'text'" class="request-text-view">
+              <div class="http-request-editor-wrapper">
+                <pre class="http-request-highlighted" v-html="highlightedRequestText"></pre>
+                <a-textarea
+                  v-model:value="requestText"
+                  :style="{ height: Math.max(200, editorHeight - 80) + 'px' }"
+                  placeholder="原始HTTP请求内容...&#10;&#10;例如：&#10;GET /api/users HTTP/1.1&#10;Host: example.com&#10;User-Agent: Mozilla/5.0...&#10;Accept: application/json"
+                  @contextmenu="handleRightClick"
+                  @keydown="handleKeyDown"
+                  @input="updateHighlightedText"
+                  ref="requestTextareaRef"
+                  class="http-request-editor"
+                />
+              </div>
+            </div>
+            
+            <!-- 表格视图 -->
+            <div v-else class="request-table-view">
+              <div class="request-table-content" :style="{ height: Math.max(200, editorHeight - 80) + 'px' }">
+                <div class="request-line" v-if="parsedRequest.method">
+                  <div class="request-line-label">方法:</div>
+                  <div class="request-line-value">
+                    <a-tag :color="getMethodColor(parsedRequest.method)" class="method-tag-small">
+                      {{ parsedRequest.method }}
+                    </a-tag>
+                  </div>
+                </div>
+                <div class="request-line" v-if="parsedRequest.path">
+                  <div class="request-line-label">路径:</div>
+                  <div class="request-line-value">{{ parsedRequest.path }}</div>
+                </div>
+                <div class="request-line" v-if="parsedRequest.version">
+                  <div class="request-line-label">版本:</div>
+                  <div class="request-line-value">{{ parsedRequest.version }}</div>
+                </div>
+                
+                <div class="headers-section" v-if="parsedRequest.headers && parsedRequest.headers.length > 0">
+                  <div class="headers-title">请求头 ({{ parsedRequest.headers.length }})</div>
+                  <div class="headers-table">
+                    <div 
+                      v-for="(header, index) in parsedRequest.headers" 
+                      :key="index"
+                      class="header-row-item"
+                    >
+                      <div class="header-key">
+                        <a-tag color="blue" class="header-key-tag">{{ header.key }}</a-tag>
+                      </div>
+                      <div class="header-value">{{ header.value }}</div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="body-section" v-if="parsedRequest.body">
+                  <div class="body-title">请求体</div>
+                  <div class="body-content">{{ parsedRequest.body }}</div>
+                </div>
+              </div>
+            </div>
           </div>
         </a-col>
         
@@ -188,7 +259,9 @@ import {
   SendOutlined, 
   EditOutlined,
   MenuFoldOutlined,
-  MenuUnfoldOutlined
+  MenuUnfoldOutlined,
+  TableOutlined,
+  FileTextOutlined
 } from '@ant-design/icons-vue';
 import type { HttpRequest } from '../types';
 import { URLParser } from '../utils/urlParser';
@@ -218,6 +291,10 @@ const isResizing = ref(false);
 // 列表收缩状态
 const isListCollapsed = ref(false); // 默认展开
 
+// 请求视图模式
+const requestViewMode = ref<'text' | 'table'>('text');
+const highlightedRequestText = ref('');
+
 // 右键菜单相关
 const contextMenuVisible = ref(false);
 const contextMenuPosition = ref({ x: 0, y: 0 });
@@ -233,26 +310,114 @@ const maxHistorySize = 50;
 // 动态高度相关
 const editorHeight = ref(400);
 
-// 格式化请求文本
-const formattedRequestText = computed(() => {
-  if (!requestText.value) return '';
+// 解析请求文本
+const parsedRequest = computed(() => {
+  if (!requestText.value) {
+    return { method: '', path: '', version: '', headers: [], body: '' };
+  }
   
   const lines = requestText.value.split('\n');
-  const formattedLines = lines.map(line => {
-    // 检查是否是HTTP header行 (格式: Key: Value)
+  const result: {
+    method: string;
+    path: string;
+    version: string;
+    headers: Array<{ key: string; value: string }>;
+    body: string;
+  } = {
+    method: '',
+    path: '',
+    version: '',
+    headers: [],
+    body: ''
+  };
+  
+  let bodyStartIndex = -1;
+  
+  // 解析请求行
+  if (lines.length > 0) {
+    const requestLine = lines[0].trim();
+    const parts = requestLine.split(' ');
+    if (parts.length >= 3) {
+      result.method = parts[0];
+      result.path = parts[1];
+      result.version = parts[2];
+    }
+  }
+  
+  // 解析请求头
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) {
+      bodyStartIndex = i;
+      break;
+    }
+    if (line.includes(': ')) {
+      const colonIndex = line.indexOf(': ');
+      const key = line.substring(0, colonIndex);
+      const value = line.substring(colonIndex + 2);
+      result.headers.push({ key, value });
+    }
+  }
+  
+  // 解析请求体
+  if (bodyStartIndex >= 0 && bodyStartIndex < lines.length - 1) {
+    result.body = lines.slice(bodyStartIndex + 1).join('\n');
+  }
+  
+  return result;
+});
+
+// 更新语法高亮文本
+const updateHighlightedText = () => {
+  if (!requestText.value) {
+    highlightedRequestText.value = '';
+    return;
+  }
+  
+  const lines = requestText.value.split('\n');
+  const highlightedLines = lines.map(line => {
+    // HTTP 方法行
+    if (/^(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS|WEBSOCKET)\s/.test(line)) {
+      const methodMatch = line.match(/^(\w+)\s/);
+      if (methodMatch) {
+        const method = methodMatch[1];
+        const rest = line.substring(method.length);
+        return `<span class="http-method">${escapeHtml(method)}</span>${escapeHtml(rest)}`;
+      }
+    }
+    
+    // HTTP 版本行
+    if (line.startsWith('HTTP/')) {
+      return `<span class="http-version">${escapeHtml(line)}</span>`;
+    }
+    
+    // Header 行 (格式: Key: Value)
     if (line.includes(': ') && !line.startsWith('HTTP/')) {
       const colonIndex = line.indexOf(': ');
       if (colonIndex > 0) {
         const key = line.substring(0, colonIndex);
         const value = line.substring(colonIndex + 2);
-        return `<strong>${key}:</strong> ${value}`;
+        return `<span class="http-header-key">${escapeHtml(key)}</span>: <span class="http-header-value">${escapeHtml(value)}</span>`;
       }
     }
-    return line;
+    
+    return escapeHtml(line);
   });
   
-  return formattedLines.join('<br>');
-});
+  highlightedRequestText.value = highlightedLines.join('\n');
+};
+
+// HTML 转义函数
+const escapeHtml = (text: string): string => {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+};
+
+// 监听 requestText 变化，更新高亮
+watch(requestText, () => {
+  updateHighlightedText();
+}, { immediate: true });
 
 // 处理请求文本变化
 const handleRequestTextChange = (event: Event) => {
@@ -1152,6 +1317,75 @@ onUnmounted(() => {
   position: relative;
 }
 
+/* 请求编辑器头部 */
+.request-editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e8e8e8;
+}
+
+.request-editor-header h4 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* 文本视图样式 */
+.request-text-view {
+  position: relative;
+  height: 100%;
+}
+
+.http-request-editor-wrapper {
+  position: relative;
+  height: 100%;
+}
+
+.http-request-highlighted {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: 0;
+  padding: 4px 11px;
+  font-family: 'JetBrains Mono', 'Consolas', 'Monaco', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  color: transparent;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+  border: 1px solid transparent;
+  border-radius: 6px;
+}
+
+.http-request-highlighted .http-method {
+  color: #1890ff;
+  font-weight: 700;
+}
+
+.http-request-highlighted .http-version {
+  color: #52c41a;
+  font-weight: 600;
+}
+
+.http-request-highlighted .http-header-key {
+  color: #722ed1;
+  font-weight: 700;
+}
+
+.http-request-highlighted .http-header-value {
+  color: rgba(0, 0, 0, 0.85);
+  font-weight: 500;
+}
+
 /* HTTP请求编辑器样式 */
 .http-request-editor {
   font-family: 'JetBrains Mono', 'Consolas', 'Monaco', monospace !important;
@@ -1162,25 +1396,141 @@ onUnmounted(() => {
   white-space: pre-wrap !important;
   word-wrap: break-word !important;
   resize: vertical !important;
+  position: relative;
+  z-index: 2;
+  background: transparent !important;
+  caret-color: #1890ff;
 }
 
-/* 为HTTP header行添加特殊样式 */
-.http-request-editor::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  pointer-events: none;
-  background: 
-    /* 为header行添加背景色 */
-    repeating-linear-gradient(
-      transparent 0,
-      transparent 1.4em,
-      rgba(24, 144, 255, 0.02) 1.4em,
-      rgba(24, 144, 255, 0.02) calc(1.4em + 1px)
-    );
+.http-request-editor::selection {
+  background: rgba(24, 144, 255, 0.2);
+}
+
+/* 表格视图样式 */
+.request-table-view {
+  height: 100%;
+  overflow-y: auto;
+}
+
+.request-table-content {
+  padding: 12px;
+  background: #fafafa;
+  border-radius: 6px;
+  border: 1px solid #e8e8e8;
+}
+
+.request-line {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  padding: 6px 8px;
+  background: #ffffff;
+  border-radius: 4px;
+  border: 1px solid #f0f0f0;
+}
+
+.request-line-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.65);
+  min-width: 50px;
+  margin-right: 8px;
+}
+
+.request-line-value {
+  flex: 1;
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.85);
+  word-break: break-all;
+}
+
+.method-tag-small {
+  font-size: 9px;
+  padding: 2px 6px;
+  font-weight: 600;
+}
+
+.headers-section {
+  margin-top: 12px;
+}
+
+.headers-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.85);
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.headers-table {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.header-row-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 8px;
+  background: #ffffff;
+  border-radius: 4px;
+  border: 1px solid #e8e8e8;
+  transition: all 0.2s ease;
+}
+
+.header-row-item:hover {
+  background: linear-gradient(135deg, #f0f8ff 0%, #ffffff 100%);
+  border-color: #1890ff;
+  box-shadow: 0 2px 6px rgba(24, 144, 255, 0.1);
+}
+
+.header-key {
+  min-width: 150px;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.header-key-tag {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+}
+
+.header-value {
+  flex: 1;
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.85);
+  word-break: break-all;
+  line-height: 1.5;
+  font-family: 'JetBrains Mono', 'Consolas', 'Monaco', monospace;
+}
+
+.body-section {
+  margin-top: 12px;
+}
+
+.body-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.85);
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.body-content {
+  padding: 10px;
+  background: #ffffff;
+  border-radius: 4px;
+  border: 1px solid #e8e8e8;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', 'Consolas', 'Monaco', monospace;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  color: rgba(0, 0, 0, 0.85);
+  max-height: 300px;
+  overflow-y: auto;
 }
 
 .response-viewer .ant-textarea {
