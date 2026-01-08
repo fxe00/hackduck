@@ -177,6 +177,31 @@ const handleWindowResize = () => {
   calculatePanelHeight();
 };
 
+// 将cookies数组转换为Cookie header字符串
+const formatCookiesToString = (cookies: chrome.cookies.Cookie[]): string => {
+  return cookies.map(cookie => `${cookie.name}=${cookie.value}`).join('; ');
+};
+
+// 获取指定域名的所有Cookie
+const getAllCookiesForDomain = (domain: string): Promise<chrome.cookies.Cookie[]> => {
+  return new Promise((resolve) => {
+    if (!chrome.cookies) {
+      console.warn('chrome.cookies API not available');
+      resolve([]);
+      return;
+    }
+
+    chrome.cookies.getAll({ domain }, (cookies) => {
+      if (chrome.runtime.lastError) {
+        console.warn('Failed to get cookies:', chrome.runtime.lastError.message);
+        resolve([]);
+        return;
+      }
+      resolve(cookies || []);
+    });
+  });
+};
+
 // 方法
 const loadCurrentRequest = async () => {
   try {
@@ -189,25 +214,41 @@ const loadCurrentRequest = async () => {
     
     // 创建基于当前URL的请求
     const currentUrl = new URL(tab.url);
+    const domain = currentUrl.hostname;
+    
+    // 获取该域名的所有Cookie
+    const cookies = await getAllCookiesForDomain(domain);
+    console.log('🍪 Loaded cookies for domain:', domain, cookies);
+    
+    // 构建headers，如果有cookies则添加Cookie header
+    const headers: Record<string, string> = {
+      'User-Agent': navigator.userAgent,
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+      'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+      'Accept-Encoding': 'gzip, deflate, br',
+      'Connection': 'keep-alive',
+      'Upgrade-Insecure-Requests': '1'
+    };
+    
+    // 如果有cookies，添加到headers中
+    if (cookies && cookies.length > 0) {
+      headers['Cookie'] = formatCookiesToString(cookies);
+      console.log('🍪 Added Cookie header:', headers['Cookie']);
+    }
+    
     editableRequest.value = {
       id: `current-${Date.now()}`,
       url: tab.url,
       method: 'GET',
-      headers: {
-        'User-Agent': navigator.userAgent,
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Connection': 'keep-alive',
-        'Upgrade-Insecure-Requests': '1'
-      },
+      headers: headers,
       body: '',
       timestamp: Date.now(),
-      tabId: tab.id
+      tabId: tab.id,
+      cookies: cookies // 保存完整的cookie信息
     };
     
     updateHeaders();
-    message.success('当前页面URL已加载');
+    message.success('当前页面URL已加载' + (cookies.length > 0 ? ` (包含 ${cookies.length} 个Cookie)` : ''));
   } catch (error) {
     message.error('加载当前页面失败');
     console.error('Load current page error:', error);
@@ -307,8 +348,29 @@ const handleKeyDown = (event: KeyboardEvent) => {
 
 const updateHeaders = () => {
   if (!editableRequest.value) return;
-  headerKeys.value = Object.keys(editableRequest.value.headers);
-  headerValues.value = Object.values(editableRequest.value.headers);
+  
+  // 如果请求有cookies但headers中没有Cookie，则添加
+  const headers: Record<string, string> = { ...(editableRequest.value.headers || {}) };
+  
+  if (editableRequest.value.cookies && editableRequest.value.cookies.length > 0) {
+    const cookieString = formatCookiesToString(editableRequest.value.cookies);
+    // 如果headers中已经有Cookie，则合并；否则添加新的
+    if (headers['Cookie'] || headers['cookie']) {
+      const existingCookie = headers['Cookie'] || headers['cookie'] || '';
+      headers['Cookie'] = existingCookie ? `${existingCookie}; ${cookieString}` : cookieString;
+      if (headers['cookie'] && headers['Cookie']) {
+        delete headers['cookie'];
+      }
+    } else {
+      headers['Cookie'] = cookieString;
+    }
+    
+    // 更新请求的headers
+    editableRequest.value.headers = headers;
+  }
+  
+  headerKeys.value = Object.keys(headers);
+  headerValues.value = Object.values(headers);
 };
 
 const addHeader = () => {

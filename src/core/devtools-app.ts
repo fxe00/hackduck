@@ -2,8 +2,8 @@ import { createApp } from 'vue';
 // @ts-ignore
 import Antd from 'ant-design-vue';
 import 'ant-design-vue/dist/reset.css';
-import './styles.css';
-import App from './components/App.vue';
+import '../styles.css';
+import App from '../components/App.vue';
 
 // 创建Vue应用
 const app = createApp(App);

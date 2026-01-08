@@ -387,17 +387,24 @@ const handleKeyDown = (event: KeyboardEvent) => {
   }
 };
 
+// 将cookies数组转换为Cookie header字符串
+const formatCookiesToString = (cookies: chrome.cookies.Cookie[]): string => {
+  return cookies.map(cookie => `${cookie.name}=${cookie.value}`).join('; ');
+};
+
 const loadRequestToEditor = (request: HttpRequest) => {
   // 设置选中的方法
   selectedMethod.value = request.method;
   
-  // 调试信息：检查请求头
+  // 调试信息：检查请求头和cookies
   console.log('🔍 Loading request to editor:', {
     url: request.url,
     method: request.method,
     headersCount: request.headers ? Object.keys(request.headers).length : 0,
     hasCookie: request.headers && (!!request.headers['Cookie'] || !!request.headers['cookie']),
     cookieValue: request.headers && (request.headers['Cookie'] || request.headers['cookie'] || 'No cookie'),
+    cookiesCount: request.cookies ? request.cookies.length : 0,
+    cookies: request.cookies,
     allHeaders: request.headers
   });
   
@@ -410,11 +417,28 @@ const loadRequestToEditor = (request: HttpRequest) => {
   requestLines.push(`Host: ${url.host}`);
   
   // 请求头 - 格式化显示
-  if (request.headers) {
-    for (const [key, value] of Object.entries(request.headers)) {
-      // 使用特殊格式来区分键和值
-      requestLines.push(`${key}: ${value}`);
+  const headers: Record<string, string> = { ...(request.headers || {}) };
+  
+  // 如果从chrome.cookies API获取到了cookies，且headers中没有Cookie，则添加
+  if (request.cookies && request.cookies.length > 0) {
+    const cookieString = formatCookiesToString(request.cookies);
+    // 如果headers中已经有Cookie，则合并；否则添加新的
+    if (headers['Cookie'] || headers['cookie']) {
+      // 合并现有的Cookie header和新的cookies
+      const existingCookie = headers['Cookie'] || headers['cookie'] || '';
+      headers['Cookie'] = existingCookie ? `${existingCookie}; ${cookieString}` : cookieString;
+      // 删除小写的cookie（如果有）
+      if (headers['cookie'] && headers['Cookie']) {
+        delete headers['cookie'];
+      }
+    } else {
+      headers['Cookie'] = cookieString;
     }
+  }
+  
+  // 输出所有请求头
+  for (const [key, value] of Object.entries(headers)) {
+    requestLines.push(`${key}: ${value}`);
   }
   
   // 空行分隔

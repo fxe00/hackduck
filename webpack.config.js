@@ -5,11 +5,11 @@ const { VueLoaderPlugin } = require('vue-loader');
 
 module.exports = {
   entry: {
-    background: './src/background.ts',
-    content: './src/content.ts',
-    devtools: './src/devtools.ts',
-    'devtools-app': './src/devtools-app.ts',
-    injected: './src/injected.ts',
+    background: './src/core/background.ts',
+    content: './src/core/content.ts',
+    devtools: './src/core/devtools.ts',
+    'devtools-app': './src/core/devtools-app.ts',
+    injected: './src/core/injected.ts',
   },
   output: {
     path: path.resolve(__dirname, 'dist'),
@@ -45,7 +45,7 @@ module.exports = {
   plugins: [
     new VueLoaderPlugin(),
     new HtmlWebpackPlugin({
-      template: './src/devtools.html',
+      template: './src/core/devtools.html',
       filename: 'devtools.html',
       chunks: ['devtools'],
     }),
@@ -62,4 +62,9 @@ module.exports = {
     /TS18047/,
     /TS7031/,
   ],
+  // 性能配置：对于浏览器扩展，bundle大小限制可以放宽
+  // 浏览器扩展场景下，较大的bundle是正常的（包含完整UI框架）
+  performance: {
+    hints: false, // 完全禁用性能警告（扩展场景不需要）
+  },
 };

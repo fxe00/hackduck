@@ -1,4 +1,4 @@
-import type { HttpRequest, Message } from './types';
+import type { HttpRequest, Message } from '../types';
 
 // 立即输出测试日志
 console.log('🚀 Background script starting...');
@@ -6,6 +6,62 @@ console.log('🚀 Background script starting...');
 // 存储拦截的请求
 let interceptedRequests: HttpRequest[] = [];
 let isIntercepting = true; // 默认开启拦截
+
+// 从URL中提取域名
+function extractDomain(url: string): string | null {
+  try {
+    const urlObj = new URL(url);
+    return urlObj.hostname;
+  } catch (error) {
+    console.warn('Failed to extract domain from URL:', url, error);
+    return null;
+  }
+}
+
+// 获取指定域名的所有Cookie（包括子域名）
+async function getAllCookiesForDomain(domain: string): Promise<chrome.cookies.Cookie[]> {
+  return new Promise((resolve) => {
+    if (!chrome.cookies) {
+      console.warn('chrome.cookies API not available');
+      resolve([]);
+      return;
+    }
+
+    // 首先尝试获取精确域名的cookie
+    chrome.cookies.getAll({ domain }, (cookies) => {
+      if (chrome.runtime.lastError) {
+        console.warn('Failed to get cookies:', chrome.runtime.lastError.message);
+        resolve([]);
+        return;
+      }
+      
+      const result = cookies || [];
+      
+      // 如果是子域名（如 www.example.com），也尝试获取父域名的cookie（如 .example.com）
+      const parts = domain.split('.');
+      if (parts.length > 2) {
+        // 尝试获取父域名的cookie（带点前缀，如 .example.com）
+        const parentDomain = '.' + parts.slice(-2).join('.');
+        chrome.cookies.getAll({ domain: parentDomain }, (parentCookies) => {
+          if (!chrome.runtime.lastError && parentCookies) {
+            // 合并结果，去重（基于name和domain）
+            const existing = new Set(result.map(c => `${c.name}@${c.domain}`));
+            parentCookies.forEach(cookie => {
+              const key = `${cookie.name}@${cookie.domain}`;
+              if (!existing.has(key)) {
+                result.push(cookie);
+                existing.add(key);
+              }
+            });
+          }
+          resolve(result);
+        });
+      } else {
+        resolve(result);
+      }
+    });
+  });
+}
 
 // 提取请求体内容
 function extractRequestBody(requestBody: any): string | undefined {
@@ -186,6 +242,30 @@ chrome.runtime.onMessage.addListener((message: Message, sender, sendResponse) =>
             source: 'webRequest'
           });
           
+          // 异步获取该域名的所有Cookie
+          const domain = extractDomain(request.url);
+          if (domain) {
+            getAllCookiesForDomain(domain).then((cookies) => {
+              const requestIndex = interceptedRequests.findIndex(req => req.id === request.id);
+              if (requestIndex !== -1) {
+                interceptedRequests[requestIndex].cookies = cookies;
+                console.log('🍪 Cookies fetched for request:', {
+                  url: request.url,
+                  domain: domain,
+                  cookieCount: cookies.length
+                });
+                
+                // 通知所有devtools面板
+                chrome.runtime.sendMessage({
+                  type: 'REQUEST_CAPTURED',
+                  data: interceptedRequests[requestIndex]
+                }).catch(() => {});
+              }
+            }).catch((error) => {
+              console.warn('Failed to get cookies:', error);
+            });
+          }
+          
           // 通知所有devtools面板
           chrome.runtime.sendMessage({
             type: 'REQUEST_CAPTURED',
@@ -327,6 +407,32 @@ chrome.webRequest.onBeforeRequest.addListener(
 
             // 使用去重函数处理请求
             removeDuplicates(request);
+            
+            // 异步获取该域名的所有Cookie
+            const domain = extractDomain(details.url);
+            if (domain) {
+              getAllCookiesForDomain(domain).then((cookies) => {
+                // 找到对应的请求并更新cookie信息
+                const requestIndex = interceptedRequests.findIndex(req => req.id === request.id);
+                if (requestIndex !== -1) {
+                  interceptedRequests[requestIndex].cookies = cookies;
+                  console.log('🍪 Cookies fetched for request:', {
+                    url: details.url,
+                    domain: domain,
+                    cookieCount: cookies.length,
+                    cookies: cookies
+                  });
+                  
+                  // 通知devtools面板更新
+                  chrome.runtime.sendMessage({
+                    type: 'REQUEST_UPDATED',
+                    data: interceptedRequests[requestIndex]
+                  }).catch(() => {});
+                }
+              }).catch((error) => {
+                console.warn('Failed to get cookies:', error);
+              });
+            }
             
             console.log('✅ Request processed via webRequest:', {
               id: request.id,

@@ -11,6 +11,7 @@ export interface HttpRequest {
   responseHeaders?: Record<string, string>;
   responseBody?: string;
   tabId: number | null;
+  cookies?: chrome.cookies.Cookie[]; // 从chrome.cookies API获取的完整cookie信息
 }
 
 export interface HttpResponse {

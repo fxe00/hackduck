@@ -10,7 +10,8 @@
     "declarativeNetRequest",
     "tabs",
     "scripting",
-    "debugger"
+    "debugger",
+    "cookies"
   ],
   "host_permissions": [
     "<all_urls>"
