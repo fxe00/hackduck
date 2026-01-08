@@ -1,6 +1,26 @@
 /* HackDuck 样式文件 */
 @import './assets/fonts/fonts.css';
 
+/* 颜色变量 */
+:root {
+  --primary-color: #1890ff;
+  --primary-hover: #40a9ff;
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --bg-tertiary: #f0f2f5;
+  --border-color: #e8e8e8;
+  --border-light: #f0f0f0;
+  --text-primary: rgba(0, 0, 0, 0.85);
+  --text-secondary: rgba(0, 0, 0, 0.65);
+  --text-tertiary: rgba(0, 0, 0, 0.45);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+}
+
 /* 自定义样式 */
 .hackduck-app {
   height: 100vh;
@@ -9,12 +29,15 @@
   font-family: 'HackDuck-Main', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
     'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
     'Noto Color Emoji';
+  background: var(--bg-tertiary);
 }
 
 .toolbar {
-  padding: 16px;
-  background: #fafafa;
-  border-bottom: 1px solid #d9d9d9;
+  padding: 12px 20px;
+  background: linear-gradient(180deg, #ffffff 0%, var(--bg-secondary) 100%);
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(10px);
 }
 
 .main-content {
@@ -28,34 +51,40 @@
 .request-list-panel,
 .request-detail-panel {
   height: 100%;
-  background: white;
-  border-radius: 6px;
-  border: 1px solid #d9d9d9;
+  background: var(--bg-primary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  overflow: hidden; /* Ensure content inside scrolls */
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s ease;
 }
 
 .panel-header {
-  padding: 16px;
-  border-bottom: 1px solid #d9d9d9;
-  background: #fafafa;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border-light);
+  background: linear-gradient(180deg, #ffffff 0%, var(--bg-secondary) 100%);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  transition: all 0.2s ease;
 }
 
 .panel-header h3 {
   margin: 0;
   font-size: 13px;
-  color: rgba(0, 0, 0, 0.85);
+  color: var(--text-primary);
+  font-weight: 600;
+  letter-spacing: 0.2px;
 }
 
 /* 过滤控件样式 */
 .filter-controls {
-  padding: 12px 16px;
-  border-bottom: 1px solid #f0f0f0;
-  background: #fafafa;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--bg-secondary);
+  transition: all 0.2s ease;
 }
 
 .current-domain {
@@ -105,13 +134,19 @@
 
 /* HackBar 模式样式 */
 .hackbar-mode {
-  padding: 16px;
+  padding: 16px 20px;
+  background: linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%);
 }
 
 .hackbar-toolbar {
   margin-bottom: 16px;
   display: flex;
-  gap: 8px;
+  gap: 10px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .hackbar-mode .request-section,
@@ -120,15 +155,31 @@
 }
 
 .hackbar-mode h4 {
-  margin: 0 0 12px 0;
+  margin: 0 0 16px 0;
   font-size: 13px;
   font-weight: 600;
   color: rgba(0, 0, 0, 0.85);
+  letter-spacing: 0.2px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e8e8e8;
 }
 
 .hackbar-mode textarea {
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
   font-size: 12px;
+  border-radius: 6px;
+  border-color: #e8e8e8;
+  transition: all 0.2s ease;
+}
+
+.hackbar-mode textarea:hover {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+}
+
+.hackbar-mode textarea:focus {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
 }
 
 /* 加载状态样式 */
@@ -167,9 +218,11 @@
 }
 
 .request-item {
-  padding: 8px 16px;
+  padding: 10px 18px;
   cursor: pointer;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--border-light);
+  transition: all 0.2s ease;
+  position: relative;
 }
 
 .request-item:last-child {
@@ -177,12 +230,15 @@
 }
 
 .request-item:hover {
-  background: #f5f5f5;
+  background: linear-gradient(90deg, #f8f9fa 0%, #ffffff 100%);
+  transform: translateX(2px);
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.04);
 }
 
 .request-item.active {
-  background: #e6f7ff;
-  border-left: 3px solid #1890ff;
+  background: linear-gradient(90deg, #e6f7ff 0%, #f0f8ff 100%);
+  border-left: 3px solid var(--primary-color);
+  box-shadow: -2px 0 8px rgba(24, 144, 255, 0.15);
 }
 
 .request-info {
@@ -266,14 +322,17 @@
 /* 可拖拽分割线 */
 .resizer {
   width: 4px;
-  background: #d9d9d9;
+  background: var(--border-color);
   cursor: col-resize;
   position: relative;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
+  z-index: 1;
 }
 
 .resizer:hover {
-  background: #1890ff;
+  background: var(--primary-color);
+  width: 6px;
+  box-shadow: 0 0 8px rgba(24, 144, 255, 0.3);
 }
 
 .resizer::after {
@@ -283,13 +342,15 @@
   left: 50%;
   transform: translate(-50%, -50%);
   width: 2px;
-  height: 20px;
-  background: #d9d9d9;
-  border-radius: 1px;
+  height: 30px;
+  background: var(--border-color);
+  border-radius: 2px;
+  transition: all 0.2s ease;
 }
 
 .resizer:hover::after {
-  background: #1890ff;
+  background: var(--primary-color);
+  height: 40px;
 }
 
 /* 响应信息区域滚动 */
@@ -369,4 +430,116 @@
 
 .ant-tabs-tabpane .ant-textarea {
   resize: vertical; /* 允许垂直调整大小 */
+}
+
+/* 自定义滚动条样式 */
+.request-list::-webkit-scrollbar,
+.ant-tabs-content-holder::-webkit-scrollbar,
+.request-editor .ant-textarea::-webkit-scrollbar,
+.response-viewer .ant-textarea::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.request-list::-webkit-scrollbar-track,
+.ant-tabs-content-holder::-webkit-scrollbar-track,
+.request-editor .ant-textarea::-webkit-scrollbar-track,
+.response-viewer .ant-textarea::-webkit-scrollbar-track {
+  background: var(--bg-secondary, #f8f9fa);
+  border-radius: 4px;
+}
+
+.request-list::-webkit-scrollbar-thumb,
+.ant-tabs-content-holder::-webkit-scrollbar-thumb,
+.request-editor .ant-textarea::-webkit-scrollbar-thumb,
+.response-viewer .ant-textarea::-webkit-scrollbar-thumb {
+  background: var(--border-color, #d9d9d9);
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.request-list::-webkit-scrollbar-thumb:hover,
+.ant-tabs-content-holder::-webkit-scrollbar-thumb:hover,
+.request-editor .ant-textarea::-webkit-scrollbar-thumb:hover,
+.response-viewer .ant-textarea::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-color, #1890ff);
+}
+
+/* 改进按钮样式 */
+.toolbar-actions .ant-btn {
+  border-radius: var(--radius-md, 6px);
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm, 0 2px 8px rgba(0, 0, 0, 0.06));
+}
+
+.toolbar-actions .ant-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.08));
+}
+
+.toolbar-actions .ant-btn-primary {
+  background: linear-gradient(135deg, var(--primary-color, #1890ff) 0%, var(--primary-hover, #40a9ff) 100%);
+  border: none;
+}
+
+.toolbar-actions .ant-btn-primary:hover {
+  background: linear-gradient(135deg, var(--primary-hover, #40a9ff) 0%, var(--primary-color, #1890ff) 100%);
+}
+
+/* 改进输入框样式 */
+.filter-controls .ant-input,
+.filter-controls .ant-input-affix-wrapper {
+  border-radius: var(--radius-md, 6px);
+  border-color: var(--border-color, #e8e8e8);
+  transition: all 0.2s ease;
+}
+
+.filter-controls .ant-input:hover,
+.filter-controls .ant-input-affix-wrapper:hover {
+  border-color: var(--primary-color, #1890ff);
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+}
+
+.filter-controls .ant-input:focus,
+.filter-controls .ant-input-affix-wrapper:focus,
+.filter-controls .ant-input-affix-wrapper-focused {
+  border-color: var(--primary-color, #1890ff);
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+/* 改进开关样式 */
+.filter-controls .ant-switch {
+  transition: all 0.3s ease;
+}
+
+.filter-controls .ant-switch-checked {
+  background-color: var(--primary-color, #1890ff);
+}
+
+/* 改进标签页样式 */
+.ant-tabs-tab {
+  transition: all 0.2s ease;
+  border-radius: var(--radius-sm, 4px) var(--radius-sm, 4px) 0 0;
+}
+
+.ant-tabs-tab:hover {
+  color: var(--primary-color, #1890ff);
+}
+
+.ant-tabs-tab-active {
+  font-weight: 600;
+}
+
+.ant-tabs-ink-bar {
+  background: linear-gradient(90deg, var(--primary-color, #1890ff) 0%, var(--primary-hover, #40a9ff) 100%);
+  height: 3px;
+  border-radius: 2px;
+}
+
+/* 改进加载状态 */
+.loading-container {
+  background: linear-gradient(135deg, var(--bg-secondary, #f8f9fa) 0%, var(--bg-primary, #ffffff) 100%);
+  border: 1px solid var(--border-light, #f0f0f0);
+  border-radius: var(--radius-md, 6px);
+  box-shadow: var(--shadow-sm, 0 2px 8px rgba(0, 0, 0, 0.06));
 }

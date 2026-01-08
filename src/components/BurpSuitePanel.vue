@@ -27,20 +27,28 @@
             />
           </a-col>
           <a-col :span="7">
-            <a-switch 
-              v-model:checked="showCurrentDomainOnly" 
-              checked-children="当前域名" 
-              un-checked-children="全部域名"
-              size="small"
-            />
+            <div class="filter-switch-wrapper">
+              <span class="switch-label">当前域名</span>
+              <a-switch 
+                v-model:checked="showCurrentDomainOnly" 
+                checked-children="ON" 
+                un-checked-children="OFF"
+                size="small"
+                class="filter-switch"
+              />
+            </div>
           </a-col>
           <a-col :span="7">
-            <a-switch 
-              v-model:checked="hideStaticResources" 
-              checked-children="静态资源" 
-              un-checked-children="静态资源"
-              size="small"
-            />
+            <div class="filter-switch-wrapper">
+              <span class="switch-label">静态资源</span>
+              <a-switch 
+                v-model:checked="hideStaticResources" 
+                checked-children="ON" 
+                un-checked-children="OFF"
+                size="small"
+                class="filter-switch"
+              />
+            </div>
           </a-col>
         </a-row>
       </div>
@@ -60,7 +68,7 @@
                 <template #title>
                   <div class="request-info">
                     <a-tag
-                      :color="getStatusColor(item.status)"
+                      :color="getMethodColor(item.method)"
                       class="method-tag"
                     >
                       {{ item.method }}
@@ -436,13 +444,25 @@ const loadRequestToEditor = (request: HttpRequest) => {
     allHeaders: request.headers
   });
   
+  // 检查是否为WebSocket请求
+  const isWebSocket = request.method === 'WEBSOCKET' || 
+                      request.url.startsWith('ws://') || 
+                      request.url.startsWith('wss://');
+  
   // 将请求转换为原始HTTP格式
   const url = new URL(request.url);
   let requestLines = [];
   
-  // 请求行
-  requestLines.push(`${request.method} ${url.pathname}${url.search} HTTP/1.1`);
-  requestLines.push(`Host: ${url.host}`);
+  // 请求行 - WebSocket请求使用GET方法进行握手
+  if (isWebSocket) {
+    requestLines.push(`GET ${url.pathname}${url.search} HTTP/1.1`);
+    requestLines.push(`Host: ${url.host}`);
+    requestLines.push(`Upgrade: websocket`);
+    requestLines.push(`Connection: Upgrade`);
+  } else {
+    requestLines.push(`${request.method} ${url.pathname}${url.search} HTTP/1.1`);
+    requestLines.push(`Host: ${url.host}`);
+  }
   
   // 请求头 - 格式化显示
   const headers: Record<string, string> = { ...(request.headers || {}) };
@@ -763,6 +783,30 @@ const getStatusColor = (status?: number) => {
   return 'error';
 };
 
+const getMethodColor = (method: string) => {
+  const upperMethod = method.toUpperCase();
+  switch (upperMethod) {
+    case 'GET':
+      return 'blue';
+    case 'POST':
+      return 'green';
+    case 'PUT':
+      return 'orange';
+    case 'DELETE':
+      return 'red';
+    case 'PATCH':
+      return 'purple';
+    case 'HEAD':
+      return 'cyan';
+    case 'OPTIONS':
+      return 'geekblue';
+    case 'WEBSOCKET':
+      return 'magenta';
+    default:
+      return 'default';
+  }
+};
+
 const formatTime = (timestamp: number) => {
   return new Date(timestamp).toLocaleTimeString();
 };
@@ -826,10 +870,12 @@ onUnmounted(() => {
   display: flex;
   height: calc(100vh - 100px);
   width: 100%;
-  border: 1px solid #d9d9d9;
-  border-radius: 6px;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
   overflow: hidden;
   position: relative;
+  background: #ffffff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
 /* 动态高度支持 */
@@ -878,12 +924,13 @@ onUnmounted(() => {
 }
 
 .panel-header {
-  padding: 12px 16px;
-  border-bottom: 1px solid #d9d9d9;
-  background-color: #fafafa;
+  padding: 14px 18px;
+  border-bottom: 1px solid #f0f0f0;
+  background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  transition: all 0.2s ease;
 }
 
 .panel-header h3 {
@@ -891,35 +938,93 @@ onUnmounted(() => {
   font-size: 13px;
   font-weight: 600;
   flex: 1;
+  letter-spacing: 0.2px;
+  color: rgba(0, 0, 0, 0.85);
 }
 
 .collapse-btn {
-  color: #666;
-  padding: 0;
-  width: 24px;
-  height: 24px;
+  color: rgba(0, 0, 0, 0.65);
+  padding: 4px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
 }
 
 .collapse-btn:hover {
   color: #1890ff;
-  background-color: #f0f0f0;
+  background-color: #f0f2f5;
+  transform: scale(1.1);
 }
 
 .filter-controls {
-  padding: 12px 16px;
+  padding: 12px 18px;
   border-bottom: 1px solid #f0f0f0;
-  background-color: #fafafa;
+  background-color: #f8f9fa;
+  transition: all 0.2s ease;
 }
 
 .filter-controls .ant-input {
   border-radius: 4px;
 }
 
-.filter-controls .ant-switch {
+.filter-switch-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
+}
+
+.switch-label {
+  font-size: 10px;
+  color: rgba(0, 0, 0, 0.65);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.filter-controls .filter-switch {
+  min-width: 36px;
+  height: 18px;
+  line-height: 16px;
+  background-color: #d9d9d9;
+  border-radius: 9px;
   margin: 0;
+}
+
+.filter-controls .filter-switch.ant-switch-checked {
+  background-color: #1890ff;
+}
+
+.filter-controls .filter-switch .ant-switch-inner {
+  font-size: 9px;
+  padding: 0 4px;
+  min-width: 16px;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.filter-controls .filter-switch .ant-switch-handle {
+  width: 14px;
+  height: 14px;
+  top: 2px;
+  left: 2px;
+}
+
+.filter-controls .filter-switch.ant-switch-checked .ant-switch-handle {
+  left: calc(100% - 16px);
+}
+
+.filter-controls .filter-switch.ant-switch-checked .ant-switch-inner {
+  margin-left: 0;
+  margin-right: 18px;
+}
+
+.filter-controls .filter-switch .ant-switch-inner-unchecked {
+  margin-left: 18px;
+  margin-right: 0;
 }
 
 .filter-controls .ant-switch-checked .ant-switch-inner {
@@ -938,8 +1043,9 @@ onUnmounted(() => {
 }
 
 .request-list .active {
-  background-color: #e6f7ff !important;
+  background: linear-gradient(90deg, #e6f7ff 0%, #f0f8ff 100%) !important;
   border-left: 3px solid #1890ff;
+  box-shadow: -2px 0 8px rgba(24, 144, 255, 0.15);
 }
 
 .request-info {
@@ -949,22 +1055,33 @@ onUnmounted(() => {
 }
 
 .method-tag {
-  font-size: 11px;
-  min-width: 50px;
+  font-size: 9px;
+  min-width: 42px;
+  max-width: 70px;
   text-align: center;
+  font-weight: 600;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  padding: 2px 6px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
 }
 
 .url {
   font-size: 11px;
-  color: #666;
+  color: rgba(0, 0, 0, 0.65);
   word-break: break-all;
+  transition: color 0.2s ease;
 }
 
 .request-meta {
   display: flex;
   justify-content: space-between;
   font-size: 10px;
-  color: #999;
+  color: rgba(0, 0, 0, 0.45);
 }
 
 .editor-panel {
@@ -974,11 +1091,12 @@ onUnmounted(() => {
 }
 
 .editor-toolbar {
-  padding: 12px 16px;
-  border-bottom: 1px solid #d9d9d9;
-  background-color: #fafafa;
+  padding: 12px 18px;
+  border-bottom: 1px solid #f0f0f0;
+  background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
   display: flex;
   gap: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
 }
 
 .request-editor h4,
@@ -1097,13 +1215,16 @@ onUnmounted(() => {
 
 .resizer {
   width: 4px;
-  background-color: #d9d9d9;
+  background-color: #e8e8e8;
   cursor: col-resize;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
+  z-index: 1;
 }
 
 .resizer:hover {
   background-color: #1890ff;
+  width: 6px;
+  box-shadow: 0 0 8px rgba(24, 144, 255, 0.3);
 }
 
 /* 展开按钮样式（当列表收缩时显示） */
@@ -1113,20 +1234,22 @@ onUnmounted(() => {
   top: 50%;
   transform: translateY(-50%);
   z-index: 10;
-  background-color: #fff;
-  border: 1px solid #d9d9d9;
+  background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
+  border: 1px solid #e8e8e8;
   border-left: none;
-  border-radius: 0 4px 4px 0;
-  padding: 8px 4px;
+  border-radius: 0 6px 6px 0;
+  padding: 10px 6px;
   cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(10px);
 }
 
 .expand-button:hover {
-  background-color: #e6f7ff;
+  background: linear-gradient(180deg, #e6f7ff 0%, #f0f8ff 100%);
   border-color: #1890ff;
-  box-shadow: 2px 0 6px rgba(24, 144, 255, 0.2);
+  box-shadow: 2px 0 12px rgba(24, 144, 255, 0.25);
+  transform: translateY(-50%) translateX(2px);
 }
 
 .expand-button .ant-btn {

@@ -92,7 +92,7 @@ h1, h2, h3, h4, h5, h6 {
 /* 请求编辑器特定样式 */
 .request-editor .ant-textarea {
   font-family: 'HackDuck-Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
-  font-size: 12px !important;
+  font-size: 11px !important;
   font-weight: 600 !important;
   line-height: 1.6 !important;
 }

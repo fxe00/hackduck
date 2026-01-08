@@ -383,10 +383,25 @@ chrome.webRequest.onBeforeRequest.addListener(
       return { cancel: false }; // 明确允许请求继续
     }
 
+    // 检测WebSocket请求
+    const isWebSocket = details.type === 'websocket' || 
+                        details.url.startsWith('ws://') || 
+                        details.url.startsWith('wss://');
+    
+    // 确定请求方法
+    let requestMethod = details.method;
+    if (isWebSocket) {
+      // WebSocket请求在握手时使用GET方法，但我们标记为WEBSOCKET以便识别
+      requestMethod = 'WEBSOCKET';
+      console.log('🔌 WebSocket request detected:', details.url);
+    }
+
             // 检查是否已存在相同的请求（基于URL和方法，忽略时间戳）
             console.log('🔍 Checking for duplicates:', {
               url: details.url,
-              method: details.method,
+              method: requestMethod,
+              type: details.type,
+              isWebSocket: isWebSocket,
               totalRequests: interceptedRequests.length
             });
             
@@ -394,7 +409,7 @@ chrome.webRequest.onBeforeRequest.addListener(
             const request: HttpRequest = {
               id: `${details.requestId}-${Date.now()}`,
               url: details.url,
-              method: details.method,
+              method: requestMethod,
               headers: {}, // 将在onBeforeSendHeaders中填充
               body: extractRequestBody(details.requestBody),
               timestamp: Date.now(),
@@ -495,6 +510,11 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
       return;
     }
 
+    // WebSocket请求也需要捕获请求头
+    const isWebSocket = details.type === 'websocket' || 
+                        details.url.startsWith('ws://') || 
+                        details.url.startsWith('wss://');
+
     // 查找对应的请求并更新headers
     const requestIndex = interceptedRequests.findIndex(
       req => req.id.includes(details.requestId)
@@ -543,6 +563,11 @@ chrome.webRequest.onHeadersReceived.addListener(
       return;
     }
 
+    // 检测WebSocket请求
+    const isWebSocket = details.type === 'websocket' || 
+                        details.url.startsWith('ws://') || 
+                        details.url.startsWith('wss://');
+    
     // 更新请求的响应头 - 改进匹配逻辑
     let requestIndex = interceptedRequests.findIndex(
       req => req.id.includes(details.requestId)
@@ -550,9 +575,16 @@ chrome.webRequest.onHeadersReceived.addListener(
     
     // 如果直接匹配失败，尝试URL匹配作为备用方案
     if (requestIndex === -1) {
-      requestIndex = interceptedRequests.findIndex(
-        req => req.url === details.url && req.method === details.method
-      );
+      // 对于WebSocket请求，method可能是GET但我们在创建时标记为WEBSOCKET
+      if (isWebSocket) {
+        requestIndex = interceptedRequests.findIndex(
+          req => req.url === details.url && (req.method === 'WEBSOCKET' || req.method === details.method)
+        );
+      } else {
+        requestIndex = interceptedRequests.findIndex(
+          req => req.url === details.url && req.method === details.method
+        );
+      }
     }
     
     if (requestIndex !== -1) {

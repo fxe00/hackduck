@@ -1,7 +1,10 @@
 <template>
   <div class="hackbar-panel" :style="{ height: panelHeight + 'px' }">
-    <!-- Load 操作区域 -->
-    <div class="load-section">
+    <div class="hackbar-content-wrapper">
+      <!-- 左侧：主要功能区域 (75%) -->
+      <div class="hackbar-main-content">
+        <!-- Load 操作区域 -->
+        <div class="load-section">
       <h4>当前页面请求操作</h4>
       <div class="load-buttons">
         <a-button @click="loadCurrentRequest" :icon="h(DownloadOutlined)" type="primary">
@@ -22,10 +25,13 @@
     <!-- 请求编辑器 -->
     <div class="request-editor">
       <h4>请求编辑器</h4>
-      <a-form :model="editableRequest" layout="vertical" v-if="editableRequest">
-        <a-row :gutter="16">
+      <a-form :model="editableRequest" layout="vertical" v-if="editableRequest" size="small">
+        <a-row :gutter="12">
           <a-col :span="6">
-            <a-form-item label="方法">
+            <a-form-item>
+              <template #label>
+                <a-tag color="blue" class="form-label-tag">方法</a-tag>
+              </template>
               <a-select v-model:value="editableRequest.method" style="width: 100%">
                 <a-select-option value="GET">GET</a-select-option>
                 <a-select-option value="POST">POST</a-select-option>
@@ -38,7 +44,10 @@
             </a-form-item>
           </a-col>
           <a-col :span="18">
-            <a-form-item label="URL">
+            <a-form-item>
+              <template #label>
+                <a-tag color="green" class="form-label-tag">URL</a-tag>
+              </template>
               <a-input 
                 v-model:value="editableRequest.url" 
                 placeholder="https://example.com/api/endpoint"
@@ -51,9 +60,19 @@
         </a-row>
         
         <!-- Headers 编辑 -->
-        <a-form-item label="请求头">
-          <a-collapse v-model:activeKey="activeHeaders" size="small">
-            <a-collapse-panel key="headers" header="Headers (点击展开)">
+        <a-form-item>
+          <template #label>
+            <a-tag color="orange" class="form-label-tag">请求头</a-tag>
+          </template>
+          <a-collapse v-model:activeKey="activeHeaders" size="small" class="headers-collapse">
+            <a-collapse-panel key="headers">
+              <template #header>
+                <div class="collapse-header-content">
+                  <span class="collapse-header-icon">📋</span>
+                  <span>Headers</span>
+                  <a-badge :count="headerKeys.length" :number-style="{ backgroundColor: '#1890ff' }" class="header-count-badge" />
+                </div>
+              </template>
               <div class="headers-editor">
                 <div
                   v-for="(key, index) in headerKeys"
@@ -80,14 +99,19 @@
                     @click="removeHeader(index)"
                   />
                 </div>
-                <a-button @click="addHeader" :icon="h(PlusOutlined)" size="small">添加Header</a-button>
+                <a-button @click="addHeader" :icon="h(PlusOutlined)" size="small" type="dashed" block class="add-header-btn">
+                  添加 Header
+                </a-button>
               </div>
             </a-collapse-panel>
           </a-collapse>
         </a-form-item>
         
         <!-- Body 编辑 -->
-        <a-form-item label="请求体">
+        <a-form-item>
+          <template #label>
+            <a-tag color="purple" class="form-label-tag">请求体</a-tag>
+          </template>
           <a-textarea
             v-model:value="editableRequest.body"
             :style="{ height: Math.max(100, Math.min(300, panelHeight - 350)) + 'px' }"
@@ -101,6 +125,30 @@
       
       <div v-else class="no-request">
         <a-empty description="请先加载一个请求" />
+      </div>
+    </div>
+      </div>
+
+      <!-- 右侧：用户笔记区域 (25%) -->
+      <div class="notes-panel">
+        <div class="notes-header">
+          <h4>📝 用户笔记</h4>
+          <a-button 
+            type="text" 
+            size="small" 
+            @click="clearNotes"
+            title="清空笔记"
+          >
+            清空
+          </a-button>
+        </div>
+        <a-textarea
+          v-model:value="userNotes"
+          class="notes-textarea"
+          placeholder="在这里记录你的测试笔记、思路、发现的问题等..."
+          :auto-size="{ minRows: 10, maxRows: 50 }"
+          @blur="saveNotes"
+        />
       </div>
     </div>
 
@@ -134,6 +182,10 @@ const headerKeys = ref<string[]>([]);
 const headerValues = ref<string[]>([]);
 const isSendingRequest = ref(false);
 const activeHeaders = ref<string[]>([]);
+
+// 用户笔记
+const userNotes = ref<string>('');
+const NOTES_STORAGE_KEY = 'hackduck_user_notes';
 
 // 右键菜单相关
 const contextMenuVisible = ref(false);
@@ -349,28 +401,38 @@ const handleKeyDown = (event: KeyboardEvent) => {
 const updateHeaders = () => {
   if (!editableRequest.value) return;
   
-  // 如果请求有cookies但headers中没有Cookie，则添加
+  // 从请求中获取headers
   const headers: Record<string, string> = { ...(editableRequest.value.headers || {}) };
   
+  // 如果请求有cookies但headers中没有Cookie，则添加
   if (editableRequest.value.cookies && editableRequest.value.cookies.length > 0) {
     const cookieString = formatCookiesToString(editableRequest.value.cookies);
-    // 如果headers中已经有Cookie，则合并；否则添加新的
-    if (headers['Cookie'] || headers['cookie']) {
-      const existingCookie = headers['Cookie'] || headers['cookie'] || '';
-      headers['Cookie'] = existingCookie ? `${existingCookie}; ${cookieString}` : cookieString;
-      if (headers['cookie'] && headers['Cookie']) {
-        delete headers['cookie'];
-      }
-    } else {
+    // 只有当headers中没有Cookie时才添加，避免重复
+    if (!headers['Cookie'] && !headers['cookie']) {
       headers['Cookie'] = cookieString;
+      // 更新请求的headers
+      editableRequest.value.headers = headers;
+      console.log('🍪 Added Cookie header from cookies:', headers['Cookie']);
+    } else if (headers['Cookie'] || headers['cookie']) {
+      // 如果headers中已经有Cookie，确保使用大写的Cookie
+      if (headers['cookie']) {
+        headers['Cookie'] = headers['cookie'];
+        delete headers['cookie'];
+        editableRequest.value.headers = headers;
+      }
+      console.log('🍪 Cookie header already exists:', headers['Cookie']);
     }
-    
-    // 更新请求的headers
-    editableRequest.value.headers = headers;
   }
   
+  // 更新显示的headers列表
   headerKeys.value = Object.keys(headers);
   headerValues.value = Object.values(headers);
+  
+  console.log('📋 Updated headers display:', {
+    headerCount: headerKeys.value.length,
+    hasCookie: !!headers['Cookie'],
+    cookieHeader: headers['Cookie'] ? 'exists' : 'missing'
+  });
 };
 
 const addHeader = () => {
@@ -652,6 +714,34 @@ const tryProxyRequest = async () => {
   message.error('所有代理服务都失败了，请检查网络连接或目标URL');
 };
 
+// 笔记相关方法
+const loadNotes = () => {
+  try {
+    const savedNotes = localStorage.getItem(NOTES_STORAGE_KEY);
+    if (savedNotes) {
+      userNotes.value = savedNotes;
+      console.log('📝 Loaded notes from storage');
+    }
+  } catch (error) {
+    console.warn('Failed to load notes:', error);
+  }
+};
+
+const saveNotes = () => {
+  try {
+    localStorage.setItem(NOTES_STORAGE_KEY, userNotes.value);
+    console.log('📝 Saved notes to storage');
+  } catch (error) {
+    console.warn('Failed to save notes:', error);
+  }
+};
+
+const clearNotes = () => {
+  userNotes.value = '';
+  saveNotes();
+  message.success('笔记已清空');
+};
+
 // 生命周期
 onMounted(() => {
   // 初始计算高度
@@ -659,6 +749,9 @@ onMounted(() => {
   
   // 监听窗口大小变化
   window.addEventListener('resize', handleWindowResize);
+  
+  // 加载笔记
+  loadNotes();
   
   console.log('🔧 HackBar panel mounted with dynamic height');
 });
@@ -674,16 +767,33 @@ watch([headerKeys, headerValues], updateRequestHeaders, { deep: true });
 
 <style scoped>
 .hackbar-panel {
-  padding: 12px;
+  padding: 12px 16px;
   width: 100%;
   overflow-y: auto;
   /* 高度现在完全由JavaScript控制 */
   display: flex;
   flex-direction: column;
+  background: linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%);
+  min-height: 100%;
+}
+
+.hackbar-content-wrapper {
+  display: flex;
+  gap: 16px;
+  height: 100%;
+  width: 100%;
+}
+
+.hackbar-main-content {
+  flex: 3;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 /* 确保请求编辑器能够正确滚动 */
-.request-editor {
+.hackbar-main-content .request-editor {
   flex: 1;
   overflow-y: auto;
   min-height: 0; /* 允许flex子元素缩小 */
@@ -691,16 +801,25 @@ watch([headerKeys, headerValues], updateRequestHeaders, { deep: true });
 
 .load-section {
   margin-bottom: 12px;
-  padding: 8px 12px;
-  background-color: #f5f5f5;
-  border-radius: 6px;
-  border: 1px solid #d9d9d9;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+}
+
+.load-section:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
 }
 
 .load-section h4 {
   margin: 0 0 8px 0;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
+  color: rgba(0, 0, 0, 0.85);
+  letter-spacing: 0.2px;
 }
 
 .load-buttons {
@@ -709,18 +828,50 @@ watch([headerKeys, headerValues], updateRequestHeaders, { deep: true });
   flex-wrap: wrap;
 }
 
+.load-buttons .ant-btn {
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  font-weight: 500;
+  font-size: 11px;
+}
+
+.load-buttons .ant-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.load-buttons .ant-btn-primary {
+  background: linear-gradient(135deg, #1890ff 0%, #40a9ff 100%);
+  border: none;
+}
+
+.load-buttons .ant-btn-primary:hover {
+  background: linear-gradient(135deg, #40a9ff 0%, #1890ff 100%);
+}
+
 .request-editor {
   margin-bottom: 12px;
-  padding: 8px 12px;
-  border: 1px solid #d9d9d9;
-  border-radius: 6px;
-  background-color: #fafafa;
+  padding: 12px 16px;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+}
+
+.request-editor:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .request-editor h4 {
-  margin: 0 0 8px 0;
-  font-size: 12px;
+  margin: 0 0 10px 0;
+  font-size: 11px;
   font-weight: 600;
+  color: rgba(0, 0, 0, 0.85);
+  letter-spacing: 0.2px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid #e8e8e8;
 }
 
 /* 动态调整HackBar中的textarea高度 - 现在由JavaScript控制 */
@@ -728,10 +879,75 @@ watch([headerKeys, headerValues], updateRequestHeaders, { deep: true });
   resize: vertical;
   overflow-y: auto;
   font-weight: 600;
+  border-radius: 6px;
+  border-color: #e8e8e8;
+  transition: all 0.2s ease;
+  font-size: 11px;
 }
 
-.headers-editor {
+.request-editor .ant-textarea:hover {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+}
+
+.request-editor .ant-textarea:focus {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+/* 表单样式优化 */
+.request-editor .ant-form-item-label {
+  padding-bottom: 6px;
+}
+
+.request-editor .ant-form-item-label > label {
+  height: auto;
+  line-height: 1;
+}
+
+.form-label-tag {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-bottom: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: none;
+}
+
+.request-editor .ant-form-item {
   margin-bottom: 12px;
+}
+
+.request-editor .ant-input,
+.request-editor .ant-select-selector {
+  border-radius: 6px;
+  border-color: #e8e8e8;
+  transition: all 0.2s ease;
+  font-size: 11px;
+}
+
+.request-editor .ant-input:hover,
+.request-editor .ant-select-selector:hover {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+}
+
+.request-editor .ant-input:focus,
+.request-editor .ant-input-focused,
+.request-editor .ant-select-focused .ant-select-selector {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+/* Headers编辑器样式 */
+.headers-editor {
+  margin-bottom: 8px;
+  padding: 12px;
+  background: linear-gradient(135deg, #fafafa 0%, #ffffff 100%);
+  border-radius: 6px;
+  border: 1px solid #e8e8e8;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .header-row {
@@ -739,11 +955,218 @@ watch([headerKeys, headerValues], updateRequestHeaders, { deep: true });
   gap: 8px;
   margin-bottom: 8px;
   align-items: center;
+  padding: 8px;
+  background: #ffffff;
+  border-radius: 6px;
+  border: 1px solid #e8e8e8;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.header-row:hover {
+  background: linear-gradient(135deg, #f0f8ff 0%, #ffffff 100%);
+  border-color: #1890ff;
+  box-shadow: 0 2px 6px rgba(24, 144, 255, 0.15);
+  transform: translateY(-1px);
+}
+
+.header-row .ant-input {
+  border-radius: 4px;
+  font-size: 11px;
+}
+
+.header-row .ant-btn {
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.header-row .ant-btn:hover {
+  transform: scale(1.1);
+}
+
+/* Collapse样式优化 */
+.request-editor .ant-collapse {
+  background: transparent;
+  border: none;
+}
+
+.headers-collapse .ant-collapse-item {
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  margin-bottom: 0;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  background: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.headers-collapse .ant-collapse-item:hover {
+  border-color: #1890ff;
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.15);
+  transform: translateY(-1px);
+}
+
+.headers-collapse .ant-collapse-item-active {
+  border-color: #1890ff;
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.2);
+}
+
+.headers-collapse .ant-collapse-header {
+  background: linear-gradient(135deg, #f0f8ff 0%, #ffffff 100%);
+  padding: 10px 14px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.85);
+  transition: all 0.2s ease;
+  font-size: 11px;
+  border-radius: 8px 8px 0 0;
+}
+
+.headers-collapse .ant-collapse-header:hover {
+  background: linear-gradient(135deg, #e6f7ff 0%, #f0f8ff 100%);
+}
+
+.collapse-header-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.collapse-header-icon {
+  font-size: 14px;
+}
+
+.header-count-badge {
+  margin-left: auto;
+}
+
+.add-header-btn {
+  margin-top: 4px;
+  border-style: dashed;
+  border-color: #1890ff;
+  color: #1890ff;
+  font-weight: 500;
+}
+
+.add-header-btn:hover {
+  border-color: #40a9ff;
+  color: #40a9ff;
+  background: #f0f8ff;
+}
+
+.request-editor .ant-collapse-header:hover {
+  background: linear-gradient(180deg, #f0f8ff 0%, #fafafa 100%);
+}
+
+.request-editor .ant-collapse-content {
+  background: #ffffff;
+  border-top: 1px solid #f0f0f0;
+}
+
+.request-editor .ant-collapse-content-box {
+  padding: 10px;
+}
+
+/* 添加Header按钮样式 */
+.headers-editor .ant-btn {
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+  font-size: 11px;
+}
+
+.headers-editor .ant-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .no-request {
   text-align: center;
-  padding: 40px 0;
+  padding: 60px 20px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-radius: 8px;
+  border: 2px dashed #e8e8e8;
+}
+
+/* 自定义滚动条 */
+.hackbar-panel::-webkit-scrollbar {
+  width: 8px;
+}
+
+.hackbar-panel::-webkit-scrollbar-track {
+  background: #f8f9fa;
+  border-radius: 4px;
+}
+
+.hackbar-panel::-webkit-scrollbar-thumb {
+  background: #d9d9d9;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.hackbar-panel::-webkit-scrollbar-thumb:hover {
+  background: #1890ff;
+}
+
+/* 笔记面板样式 */
+.notes-panel {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%);
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.notes-header {
+  padding: 10px 14px;
+  border-bottom: 1px solid #e8e8e8;
+  background: linear-gradient(135deg, #f0f8ff 0%, #ffffff 100%);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.notes-header h4 {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.85);
+  letter-spacing: 0.2px;
+}
+
+.notes-header .ant-btn {
+  font-size: 10px;
+  padding: 2px 8px;
+  height: 22px;
+}
+
+.notes-textarea {
+  flex: 1;
+  border: none;
+  border-radius: 0;
+  padding: 12px;
+  font-size: 11px;
+  line-height: 1.6;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
+  resize: none;
+  background: #ffffff;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.notes-textarea:focus {
+  border: none;
+  box-shadow: none;
+  outline: none;
+}
+
+.notes-textarea::placeholder {
+  color: rgba(0, 0, 0, 0.25);
+  font-style: italic;
 }
 
 </style>
