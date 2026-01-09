@@ -1839,7 +1839,7 @@ onUnmounted(() => {
   font-family: 'JetBrains Mono', 'Consolas', 'Monaco', monospace;
   font-size: 12px;
   font-weight: 600;
-  line-height: 1.4;
+  line-height: 1.6;
   white-space: pre-wrap;
   word-wrap: break-word;
   color: transparent;
@@ -1875,7 +1875,7 @@ onUnmounted(() => {
   font-family: 'JetBrains Mono', 'Consolas', 'Monaco', monospace !important;
   font-size: 12px !important;
   font-weight: 600 !important;
-  line-height: 1.4 !important;
+  line-height: 1.6 !important;
   overflow-y: auto !important;
   white-space: pre-wrap !important;
   word-wrap: break-word !important;
@@ -1884,6 +1884,7 @@ onUnmounted(() => {
   z-index: 2;
   background: transparent !important;
   caret-color: #1890ff;
+  padding: 4px 11px !important;
 }
 
 .http-request-editor::selection {
@@ -2028,6 +2029,11 @@ onUnmounted(() => {
   background-color: #f5f5f5 !important;
   color: #666 !important;
   border: 1px solid #d9d9d9 !important;
+  font-family: 'JetBrains Mono', 'Consolas', 'Monaco', monospace !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  line-height: 1.6 !important;
+  padding: 4px 11px !important;
 }
 
 /* 搜索框样式 */
@@ -2063,7 +2069,8 @@ onUnmounted(() => {
   margin: 0;
   font-family: 'JetBrains Mono', 'Consolas', 'Monaco', monospace;
   font-size: 12px;
-  line-height: 1.5;
+  font-weight: 600;
+  line-height: 1.6;
   color: transparent;
   white-space: pre-wrap;
   word-wrap: break-word;
