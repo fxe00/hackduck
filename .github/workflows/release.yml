@@ -3,98 +3,93 @@ name: Auto Release
 on:
   push:
     tags:
-      - 'v*'  # 当推送以v开头的tag时触发
+      - "v*" # 当推送以v开头的tag时触发
 
 permissions:
-  contents: write  # 允许写入内容（创建Release）
-  packages: write  # 允许写入包
+  contents: write # 允许写入内容（创建Release）
+  packages: write # 允许写入包
 
 jobs:
   release:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Build project
-      run: npm run build
-      
-    - name: Build Chrome extension
-      run: |
-        chmod +x scripts/build-chrome.sh
-        ./scripts/build-chrome.sh
-        
-    - name: Build Firefox extension
-      run: |
-        chmod +x scripts/build-firefox.sh
-        ./scripts/build-firefox.sh
-        
-    - name: Build Edge extension
-      run: |
-        chmod +x scripts/build-edge.sh
-        ./scripts/build-edge.sh
-        
-    - name: Get version from tag
-      id: get_version
-      run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-      
-    - name: Create Release
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: ${{ github.ref_name }}
-        name: HackDuck ${{ github.ref_name }} - HTTP Request Debugger
-        body: |
-                 # HackDuck ${{ github.ref_name }} - HTTP Request Debugger
-                 
-                 ## 🎉 自动发布
-                 
-                 此版本通过GitHub Actions自动构建和发布。
-                 
-                 ## ✨ 主要功能
-                 
-                 - 🔍 **实时请求拦截**：捕获浏览器发出的所有HTTP请求
-                 - 🛠️ **双模式界面**：Burp Suite模式和HackBar模式
-                 - 🎯 **高级功能**：右键编码菜单、撤销/重做、动态高度调整
-                 - 🌐 **多浏览器支持**：Chrome、Firefox、Edge
-                 
-                 ## 📦 安装说明
-                 
-                 1. 下载对应浏览器的ZIP文件
-                 2. 解压到本地目录
-                 3. 打开浏览器扩展管理页面
-                 4. 启用"开发者模式"
-                 5. 点击"加载已解压的扩展程序"
-                 6. 选择解压后的文件夹
-                 
-                 ## 📋 文件清单
-                 
-                 - `hackduck-chrome-${{ github.ref_name }}.zip` - Chrome版本
-                 - `hackduck-firefox-${{ github.ref_name }}.zip` - Firefox版本
-                 - `hackduck-edge-${{ github.ref_name }}.zip` - Edge版本
-                 
-                 ## 📞 支持
-                 
-                 如有问题，请通过GitHub Issues联系我们。
-                 
-                 ---
-                 
-                 **HackDuck Team** - 让HTTP调试更简单！
-        files: |
-          releases/hackduck-chrome-*.zip
-          releases/hackduck-firefox-*.zip
-          releases/hackduck-edge-*.zip
-          releases/updates.json
-        draft: false
-        prerelease: false
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+
+      - name: Build Chrome extension
+        run: |
+          chmod +x scripts/build-chrome.sh
+          ./scripts/build-chrome.sh
+
+      - name: Build Edge extension
+        run: |
+          chmod +x scripts/build-edge.sh
+          ./scripts/build-edge.sh
+
+      - name: Get version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: HackDuck ${{ github.ref_name }} - HTTP Request Debugger
+          body: |
+            # HackDuck ${{ github.ref_name }} - HTTP Request Debugger
+
+            ## 🎉 自动发布
+
+            此版本通过GitHub Actions自动构建和发布。
+
+            ## ✨ 主要功能
+
+            - 🔍 **实时请求拦截**：捕获浏览器发出的所有HTTP请求
+            - 🛠️ **双模式界面**：Burp Suite模式和HackBar模式
+            - 🎯 **高级功能**：右键编码菜单、撤销/重做、动态高度调整
+            - 🌐 **多浏览器支持**：Chrome、Edge（Firefox 暂不支持）
+
+            ## 📦 安装说明
+
+            1. 下载对应浏览器的ZIP文件
+            2. 解压到本地目录
+            3. 打开浏览器扩展管理页面
+            4. 启用"开发者模式"
+            5. 点击"加载已解压的扩展程序"
+            6. 选择解压后的文件夹
+
+            ## 📋 文件清单
+
+            - `hackduck-chrome-${{ github.ref_name }}.zip` - Chrome版本
+            - `hackduck-edge-${{ github.ref_name }}.zip` - Edge版本
+
+            ⚠️ **注意**：Firefox 版本暂不支持，正在开发中。
+
+            ## 📞 支持
+
+            如有问题，请通过GitHub Issues联系我们。
+
+            ---
+
+            **HackDuck Team** - 让HTTP调试更简单！
+          files: |
+            releases/hackduck-chrome-*.zip
+            releases/hackduck-edge-*.zip
+            releases/updates.json
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

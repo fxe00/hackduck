@@ -9,7 +9,7 @@
 - 🚀 **请求重放** - 重新发送修改后的请求
 - 📚 **请求历史** - 保存和管理请求记录
 - 🔄 **批量操作** - 支持批量修改和发送
-- 🌐 **多浏览器支持** - 兼容 Chrome、Edge、Firefox
+- 🌐 **多浏览器支持** - 兼容 Chrome、Edge（Firefox 暂不支持）
 - 🎨 **语法高亮** - 请求编辑器支持语法高亮和表格视图
 - 📝 **用户笔记** - HackBar 模式支持用户笔记功能
 - 🔐 **编码解码工具** - 右键菜单支持 Base64、URL、HTML 编码解码以及 MD5、SHA256 哈希
@@ -126,10 +126,12 @@ npm run dev
 
 #### Firefox 浏览器
 
-1. 打开 Firefox，访问 `about:debugging`
-2. 点击"此 Firefox"（This Firefox）
-3. 点击"临时载入附加组件"（Load Temporary Add-on）
-4. 选择 `dist` 文件夹中的 `manifest.json` 文件
+⚠️ **注意：Firefox 支持正在开发中，当前版本暂不支持 Firefox。**
+
+如果你需要 Firefox 支持，可以：
+
+1. 关注项目更新，等待 Firefox 支持版本发布
+2. 提交 Issue 反馈 Firefox 支持需求
 
 ### 5. 使用扩展
 
@@ -171,9 +173,9 @@ hackduck/
 
 ## 浏览器兼容性
 
-- Chrome 88+
-- Firefox 78+
-- Edge 88+
+- ✅ Chrome 88+
+- ✅ Edge 88+
+- ⚠️ Firefox 78+（暂不支持，正在开发中）
 
 ## 已知问题和限制
 
