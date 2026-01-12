@@ -95,12 +95,13 @@
     <div class="resizer" v-if="!isListCollapsed" @mousedown="startResize"></div>
     
     <!-- 展开按钮（当列表收缩时显示） -->
-    <div class="expand-button" v-if="isListCollapsed" @click="toggleListCollapse">
+    <div class="expand-button" v-if="isListCollapsed" @click.stop="toggleListCollapse">
       <a-button 
         type="text" 
         size="small" 
         :icon="h(MenuUnfoldOutlined)"
         title="展开列表"
+        @click.stop="toggleListCollapse"
       />
     </div>
 
@@ -1719,7 +1720,7 @@ onUnmounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  cursor: help;
+  cursor: default;
   font-size: 11px;
   color: rgba(0, 0, 0, 0.65);
   transition: color 0.2s ease;
@@ -1737,6 +1738,8 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   transition: width 0.3s ease;
+  position: relative;
+  z-index: 1;
 }
 
 .editor-toolbar {
@@ -2123,12 +2126,14 @@ onUnmounted(() => {
   left: 0;
   top: 50%;
   transform: translateY(-50%);
-  z-index: 10;
+  z-index: 100;
   background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
   border: 1px solid #e8e8e8;
   border-left: none;
   border-radius: 0 6px 6px 0;
   padding: 10px 6px;
+  pointer-events: auto;
+  margin-left: -1px;
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.12);
