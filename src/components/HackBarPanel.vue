@@ -11,7 +11,7 @@
               <a-button 
                 @click="loadCurrentRequest" 
                 :icon="h(DownloadOutlined)" 
-                size="small"
+                size="large"
                 type="default"
               >
                 Load
@@ -21,7 +21,7 @@
                 :icon="h(SendOutlined)"
                 :loading="isSendingRequest"
                 :disabled="isSendingRequest || !editableRequest"
-                size="small"
+                size="large"
                 type="primary"
               >
                 {{ isSendingRequest ? '发送中...' : 'Send' }}
@@ -572,12 +572,24 @@ const sendRequest = async () => {
       return;
     }
     
+    // 将 headers 转换为普通对象，避免 Proxy 对象无法序列化的问题
+    const headersObj: Record<string, string> = {};
+    if (editableRequest.value.headers) {
+      // 如果是 Proxy 对象，需要手动转换为普通对象
+      const headers = editableRequest.value.headers;
+      for (const key in headers) {
+        if (Object.prototype.hasOwnProperty.call(headers, key)) {
+          headersObj[key] = String(headers[key]);
+        }
+      }
+    }
+    
     const messageData = {
       type: 'SEND_REQUEST',
       data: {
         url: editableRequest.value.url,
         method: editableRequest.value.method,
-        headers: editableRequest.value.headers,
+        headers: headersObj,
         body: editableRequest.value.body
       }
     };
@@ -935,12 +947,18 @@ watch([headerKeys, headerValues], updateRequestHeaders, { deep: true });
 }
 
 .editor-actions .ant-btn {
-  border-radius: 4px;
-  font-size: 10px;
-  height: 24px;
-  padding: 0 12px;
+  border-radius: 5px;
+  font-size: 12px;
+  height: 32px;
+  padding: 0 18px;
   font-weight: 500;
   transition: all 0.2s ease;
+  min-width: 80px;
+}
+
+.editor-actions .ant-btn .anticon {
+  font-size: 14px;
+  margin-right: 4px;
 }
 
 .editor-actions .ant-btn:hover {

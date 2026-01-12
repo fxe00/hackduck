@@ -213,28 +213,179 @@ async function handleHackBarRequest(data: any) {
   
   console.log('🚀 HackBar request received:', { url, method, headers, body });
   
-  // 简单场景：GET 且无自定义头 → 直接跳转
-  const hasCustomHeader = Object.keys(headers).some(k => 
-    k.toLowerCase() !== 'user-agent' && 
-    k.toLowerCase() !== 'accept' && 
-    k.toLowerCase() !== 'accept-language' &&
-    k.toLowerCase() !== 'accept-encoding' &&
-    k.toLowerCase() !== 'connection' &&
-    k.toLowerCase() !== 'upgrade-insecure-requests'
-  );
+  // 获取当前活动标签页
+  let currentTab: chrome.tabs.Tab | null = null;
+  try {
+    // @ts-ignore - browser API 在 Firefox 中可用
+    const browserAPI = typeof browser !== 'undefined' ? (browser as any) : null;
+    const chromeAPI = typeof chrome !== 'undefined' ? chrome : null;
+    
+    if (browserAPI?.tabs) {
+      // Firefox: Promise-based
+      // @ts-ignore - browser API 在 Firefox 中可用
+      const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+      currentTab = tabs[0] || null;
+    } else if (chromeAPI?.tabs) {
+      // Chrome: Callback-based
+      currentTab = await new Promise((resolve) => {
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          resolve(tabs[0] || null);
+        });
+      }) as chrome.tabs.Tab | null;
+    }
+  } catch (error) {
+    console.error('Failed to get current tab:', error);
+  }
   
-  if (method === 'GET' && !hasCustomHeader && !body) {
+  // 对于 GET 请求，直接在当前标签页导航（即使有自定义 headers）
+  if (method === 'GET' && !body) {
     console.log('📤 Direct navigation for GET request');
     try {
-      await chrome.tabs.update({ url });
-      return;
+      // @ts-ignore - browser API 在 Firefox 中可用
+      const browserAPI = typeof browser !== 'undefined' ? browser : null;
+      const chromeAPI = typeof chrome !== 'undefined' ? chrome : null;
+      
+      if (currentTab && currentTab.id) {
+        if (browserAPI?.tabs) {
+          // Firefox: Promise-based
+          // @ts-ignore - browser API 在 Firefox 中可用
+          await browserAPI.tabs.update(currentTab.id, { url });
+        } else if (chromeAPI?.tabs) {
+          // Chrome: Callback-based
+          await new Promise((resolve, reject) => {
+            chrome.tabs.update(currentTab!.id!, { url }, (tab) => {
+              if (chrome.runtime.lastError) {
+                reject(chrome.runtime.lastError);
+              } else {
+                resolve(tab);
+              }
+            });
+          });
+        }
+        return;
+      } else {
+        // 如果没有当前标签页，创建新标签页
+        if (browserAPI?.tabs) {
+          // @ts-ignore - browser API 在 Firefox 中可用
+          await browserAPI.tabs.create({ url });
+        } else if (chromeAPI?.tabs) {
+          await chrome.tabs.create({ url });
+        }
+        return;
+      }
     } catch (error) {
       console.error('Failed to navigate:', error);
     }
   }
   
-  // 其余情况：构造临时标签页 + 表单提交
+  // POST/PUT/DELETE 等需要 body 的请求：在当前标签页中注入脚本提交表单
   console.log('📤 Creating form submission for complex request');
+  
+  if (currentTab && currentTab.id) {
+    // 在当前标签页中注入脚本提交表单
+    const scriptCode = `
+      (function() {
+        const form = document.createElement('form');
+        form.method = '${method}';
+        form.action = ${JSON.stringify(url)};
+        
+        ${Object.entries(headers)
+          .filter(([k]) => k.toLowerCase() !== 'cookie') // Cookie 无法通过表单提交
+          .map(([k, v]) => {
+            const safeKey = k.replace(/[^a-zA-Z0-9]/g, '_');
+            return `const input_${safeKey} = document.createElement('input');
+            input_${safeKey}.type = 'hidden';
+            input_${safeKey}.name = ${JSON.stringify(k)};
+            input_${safeKey}.value = ${JSON.stringify(String(v))};
+            form.appendChild(input_${safeKey});`;
+          })
+          .join('\n')}
+        
+        ${body ? `const bodyInput = document.createElement('input');
+        bodyInput.type = 'hidden';
+        bodyInput.name = 'body';
+        bodyInput.value = ${JSON.stringify(String(body))};
+        form.appendChild(bodyInput);` : ''}
+        
+        document.body.appendChild(form);
+        
+        // 如果有自定义 headers（如 Cookie），使用 fetch API
+        const customHeaders = ${JSON.stringify(headers)};
+        const hasCustomHeaders = customHeaders.Cookie || customHeaders.cookie || Object.keys(customHeaders).some(k => 
+          k.toLowerCase() !== 'user-agent' && 
+          k.toLowerCase() !== 'accept' && 
+          k.toLowerCase() !== 'accept-language' &&
+          k.toLowerCase() !== 'accept-encoding' &&
+          k.toLowerCase() !== 'connection' &&
+          k.toLowerCase() !== 'upgrade-insecure-requests'
+        );
+        
+        if (hasCustomHeaders) {
+          // 使用 fetch API 发送请求
+          fetch(${JSON.stringify(url)}, {
+            method: '${method}',
+            headers: customHeaders,
+            ${body ? `body: ${JSON.stringify(String(body))},` : ''}
+            credentials: 'include'
+          }).then(response => {
+            // 如果响应是 HTML，替换当前页面
+            if (response.headers.get('content-type')?.includes('text/html')) {
+              return response.text().then(html => {
+                document.open();
+                document.write(html);
+                document.close();
+              });
+            } else {
+              // 其他类型响应，跳转到响应 URL
+              window.location.href = ${JSON.stringify(url)};
+            }
+          }).catch(error => {
+            console.error('Fetch error:', error);
+            // 如果 fetch 失败，回退到表单提交
+            form.submit();
+          });
+        } else {
+          // 没有自定义 headers，直接提交表单
+          form.submit();
+        }
+      })();
+    `;
+    
+    try {
+      // @ts-ignore - browser API 在 Firefox 中可用
+      const browserAPI = typeof browser !== 'undefined' ? browser : null;
+      const chromeAPI = typeof chrome !== 'undefined' ? chrome : null;
+      
+      if (browserAPI?.tabs) {
+        // Firefox: Promise-based
+        // @ts-ignore - browser API 在 Firefox 中可用
+        await browserAPI.tabs.executeScript(currentTab.id, {
+          code: scriptCode
+        });
+      } else if (chromeAPI?.tabs) {
+        // Chrome: Callback-based
+        await new Promise((resolve, reject) => {
+          chrome.tabs.executeScript(currentTab!.id!, {
+            code: scriptCode
+          }, (results) => {
+            if (chrome.runtime.lastError) {
+              reject(chrome.runtime.lastError);
+            } else {
+              resolve(results);
+            }
+          });
+        });
+      }
+      console.log('✅ HackBar form script injected in current tab');
+      return;
+    } catch (error) {
+      console.error('Failed to inject script:', error);
+      // 如果注入失败，回退到创建新标签页的方式
+    }
+  }
+  
+  // 回退方案：构造临时标签页 + 表单提交（仅当无法在当前标签页操作时）
+  console.log('📤 Fallback: Creating form submission in new tab');
   
   const html = `
     <html>
@@ -244,13 +395,39 @@ async function handleHackBarRequest(data: any) {
     <body>
       <form id="hackbar-form" method="${method}" action="${url}">
         ${Object.entries(headers)
+          .filter(([k]) => k.toLowerCase() !== 'cookie') // Cookie 无法通过表单提交
           .map(([k, v]) => `<input type="hidden" name="header_${k}" value="${String(v).replace(/"/g, '&quot;')}">`)
           .join('')}
         ${body ? `<input type="hidden" name="body" value="${String(body).replace(/"/g, '&quot;')}">` : ''}
       </form>
       <script>
         console.log('🚀 Submitting HackBar form...');
-        document.getElementById('hackbar-form').submit();
+        const form = document.getElementById('hackbar-form');
+        const headers = ${JSON.stringify(headers)};
+        
+        // 如果有 Cookie header，使用 fetch API
+        if (headers.Cookie || headers.cookie) {
+          fetch('${url}', {
+            method: '${method}',
+            headers: headers,
+            ${body ? `body: ${JSON.stringify(String(body))},` : ''}
+            credentials: 'include'
+          }).then(response => {
+            if (response.headers.get('content-type')?.includes('text/html')) {
+              return response.text().then(html => {
+                document.open();
+                document.write(html);
+                document.close();
+              });
+            } else {
+              window.location.href = '${url}';
+            }
+          }).catch(() => {
+            form.submit();
+          });
+        } else {
+          form.submit();
+        }
       </script>
     </body>
     </html>`;
@@ -259,15 +436,32 @@ async function handleHackBarRequest(data: any) {
   const blobUrl = URL.createObjectURL(blob);
   
   try {
-    const tab = await chrome.tabs.create({ url: blobUrl });
-    console.log('✅ HackBar form created in tab:', tab.id);
-    
-    // 2秒后关闭临时标签（可选）
-    setTimeout(() => {
-      chrome.tabs.remove(tab.id!).catch(() => {
-        console.log('Tab already closed or not found');
-      });
-    }, 2000);
+    if (browserAPI?.tabs) {
+      // Firefox: Promise-based
+      // @ts-ignore - browser API 在 Firefox 中可用
+      const tab = await browserAPI.tabs.create({ url: blobUrl });
+      console.log('✅ HackBar form created in tab:', tab.id);
+      
+      // 2秒后关闭临时标签（可选）
+      setTimeout(() => {
+        if (tab.id && browserAPI?.tabs) {
+          (browserAPI.tabs as any).remove(tab.id).catch(() => {
+            console.log('Tab already closed or not found');
+          });
+        }
+      }, 2000);
+    } else if (chromeAPI?.tabs) {
+      // Chrome: Callback-based
+      const tab = await chrome.tabs.create({ url: blobUrl });
+      console.log('✅ HackBar form created in tab:', tab.id);
+      
+      // 2秒后关闭临时标签（可选）
+      setTimeout(() => {
+        chrome.tabs.remove(tab.id!).catch(() => {
+          console.log('Tab already closed or not found');
+        });
+      }, 2000);
+    }
   } catch (error) {
     console.error('Failed to create HackBar form:', error);
   }
