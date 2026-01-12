@@ -70,8 +70,19 @@ const handleModeChange = (mode: 'burp' | 'hackbar') => {
 };
 
 const getCurrentDomain = () => {
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    if (tabs[0]?.url) {
+  // Firefox 兼容性：使用 browser.tabs 或 chrome.tabs
+  // @ts-ignore - browser API 在 Firefox 中可用
+  const browserAPI = typeof browser !== 'undefined' ? browser : null;
+  const chromeAPI = typeof chrome !== 'undefined' ? chrome : null;
+  const tabsAPI = browserAPI?.tabs || chromeAPI?.tabs;
+  
+  if (!tabsAPI) {
+    console.warn('⚠️ Tabs API not available');
+    return;
+  }
+  
+  tabsAPI.query({ active: true, currentWindow: true }, (tabs: any[]) => {
+    if (tabs && tabs[0]?.url) {
       try {
         const url = new URL(tabs[0].url);
         currentDomain.value = url.hostname;
@@ -85,9 +96,22 @@ const getCurrentDomain = () => {
 
 const clearRequests = () => {
   requests.value = [];
-  chrome.runtime.sendMessage({
-    type: 'CLEAR_REQUESTS'
-  });
+  // Firefox 兼容性
+  // @ts-ignore - browser API 在 Firefox 中可用
+  const browserAPI = typeof browser !== 'undefined' ? browser : null;
+  const chromeAPI = typeof chrome !== 'undefined' ? chrome : null;
+  const runtimeAPI = browserAPI?.runtime || chromeAPI?.runtime;
+  
+  if (runtimeAPI) {
+    if (browserAPI?.runtime) {
+      // Firefox: Promise-based
+      // @ts-ignore - browser API 在 Firefox 中可用
+      browser.runtime.sendMessage({ type: 'CLEAR_REQUESTS' }).catch(console.error);
+    } else {
+      // Chrome: Callback-based
+      chrome.runtime.sendMessage({ type: 'CLEAR_REQUESTS' });
+    }
+  }
 };
 
 const exportRequests = () => {
@@ -108,17 +132,25 @@ onMounted(() => {
   getCurrentDomain();
   
   // 监听来自background script的消息
-  chrome.runtime.onMessage.addListener((message) => {
-    if (message.type === 'REQUEST_CAPTURED') {
-      requests.value.unshift(message.data);
-    } else if (message.type === 'REQUEST_UPDATED') {
-      // 更新现有请求
-      const index = requests.value.findIndex(req => req.id === message.data.id);
-      if (index !== -1) {
-        requests.value[index] = message.data;
+  // Firefox 兼容性
+  // @ts-ignore - browser API 在 Firefox 中可用
+  const browserAPI = typeof browser !== 'undefined' ? browser : null;
+  const chromeAPI = typeof chrome !== 'undefined' ? chrome : null;
+  const runtimeAPI = browserAPI?.runtime || chromeAPI?.runtime;
+  
+  if (runtimeAPI && runtimeAPI.onMessage) {
+    runtimeAPI.onMessage.addListener((message: any) => {
+      if (message.type === 'REQUEST_CAPTURED') {
+        requests.value.unshift(message.data);
+      } else if (message.type === 'REQUEST_UPDATED') {
+        // 更新现有请求
+        const index = requests.value.findIndex(req => req.id === message.data.id);
+        if (index !== -1) {
+          requests.value[index] = message.data;
+        }
       }
-    }
-  });
+    });
+  }
   
   // 监听自定义事件
   window.addEventListener('hackduck-request-captured', (event: any) => {

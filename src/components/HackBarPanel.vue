@@ -233,37 +233,92 @@ const handleWindowResize = () => {
 };
 
 // 将cookies数组转换为Cookie header字符串
-const formatCookiesToString = (cookies: chrome.cookies.Cookie[]): string => {
-  return cookies.map(cookie => `${cookie.name}=${cookie.value}`).join('; ');
+const formatCookiesToString = (cookies: any[]): string => {
+  return cookies.map((cookie: any) => `${cookie.name}=${cookie.value}`).join('; ');
 };
 
 // 获取指定域名的所有Cookie
-const getAllCookiesForDomain = (domain: string): Promise<chrome.cookies.Cookie[]> => {
+const getAllCookiesForDomain = (domain: string): Promise<any[]> => {
   return new Promise((resolve) => {
-    if (!chrome.cookies) {
-      console.warn('chrome.cookies API not available');
+    // Firefox 兼容性：检测并使用正确的 cookies API
+    // @ts-ignore - browser API 在 Firefox 中可用
+    const browserAPI = typeof browser !== 'undefined' ? browser : null;
+    const chromeAPI = typeof chrome !== 'undefined' ? chrome : null;
+    const cookiesAPI = browserAPI?.cookies || chromeAPI?.cookies;
+    
+    if (!cookiesAPI) {
+      console.warn('Cookies API not available');
       resolve([]);
       return;
     }
 
-    chrome.cookies.getAll({ domain }, (cookies) => {
-      if (chrome.runtime.lastError) {
-        console.warn('Failed to get cookies:', chrome.runtime.lastError.message);
+    if (browserAPI?.cookies) {
+      // Firefox: Promise-based
+      // @ts-ignore - browser API 在 Firefox 中可用
+      browser.cookies.getAll({ domain }).then((cookies: any[]) => {
+        resolve(cookies || []);
+      }).catch((error: any) => {
+        console.warn('Failed to get cookies:', error);
         resolve([]);
-        return;
-      }
-      resolve(cookies || []);
-    });
+      });
+    } else {
+      // Chrome: Callback-based
+      chrome.cookies.getAll({ domain }, (cookies) => {
+        if (chrome.runtime.lastError) {
+          console.warn('Failed to get cookies:', chrome.runtime.lastError.message);
+          resolve([]);
+          return;
+        }
+        resolve(cookies || []);
+      });
+    }
   });
 };
 
 // 方法
 const loadCurrentRequest = async () => {
   try {
-    // 获取当前页面的URL
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (!tab.id || !tab.url) {
-      message.error('无法获取当前标签页');
+    // DevTools 环境中无法直接访问 tabs API，需要通过 background script
+    // Firefox 兼容性：通过 runtime.sendMessage 获取当前标签页
+    // @ts-ignore - browser API 在 Firefox 中可用
+    const browserAPI = typeof browser !== 'undefined' ? browser : null;
+    const chromeAPI = typeof chrome !== 'undefined' ? chrome : null;
+    const runtimeAPI = browserAPI?.runtime || chromeAPI?.runtime;
+    
+    if (!runtimeAPI) {
+      message.error('无法访问运行时 API');
+      return;
+    }
+    
+    // 通过 background script 获取当前标签页
+    let tab: any;
+    if (browserAPI?.runtime) {
+      // Firefox: Promise-based
+      // @ts-ignore - browser API 在 Firefox 中可用
+      const response = await browser.runtime.sendMessage({ type: 'GET_CURRENT_TAB' });
+      if (response && response.success && response.tab) {
+        tab = response.tab;
+      } else {
+        message.error(response?.error || '无法获取当前标签页');
+        return;
+      }
+    } else {
+      // Chrome: Callback-based
+      tab = await new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage({ type: 'GET_CURRENT_TAB' }, (response: any) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+          } else if (response && response.success && response.tab) {
+            resolve(response.tab);
+          } else {
+            reject(new Error(response?.error || '无法获取当前标签页'));
+          }
+        });
+      });
+    }
+    
+    if (!tab || !tab.id || !tab.url) {
+      message.error('无法获取当前标签页信息');
       return;
     }
     
@@ -271,8 +326,36 @@ const loadCurrentRequest = async () => {
     const currentUrl = new URL(tab.url);
     const domain = currentUrl.hostname;
     
-    // 获取该域名的所有Cookie
-    const cookies = await getAllCookiesForDomain(domain);
+    // 通过 background script 获取该域名的所有Cookie（DevTools 环境中无法直接访问 cookies API）
+    let cookies: any[] = [];
+    if (browserAPI?.runtime) {
+      // Firefox: Promise-based
+      // @ts-ignore - browser API 在 Firefox 中可用
+      const cookieResponse = await browser.runtime.sendMessage({ 
+        type: 'GET_COOKIES_FOR_DOMAIN', 
+        data: { domain } 
+      });
+      if (cookieResponse && cookieResponse.success) {
+        cookies = cookieResponse.cookies || [];
+      }
+    } else {
+      // Chrome: Callback-based
+      cookies = await new Promise((resolve) => {
+        chrome.runtime.sendMessage({ 
+          type: 'GET_COOKIES_FOR_DOMAIN', 
+          data: { domain } 
+        }, (response: any) => {
+          if (chrome.runtime.lastError) {
+            console.warn('Failed to get cookies:', chrome.runtime.lastError);
+            resolve([]);
+          } else if (response && response.success) {
+            resolve(response.cookies || []);
+          } else {
+            resolve([]);
+          }
+        });
+      });
+    }
     console.log('🍪 Loaded cookies for domain:', domain, cookies);
     
     // 构建headers，如果有cookies则添加Cookie header
@@ -478,8 +561,18 @@ const sendRequest = async () => {
       headers: editableRequest.value.headers
     });
     
-    // 把请求数据发送给background script处理
-    chrome.runtime.sendMessage({
+    // Firefox 兼容性：把请求数据发送给background script处理
+    // @ts-ignore - browser API 在 Firefox 中可用
+    const browserAPI = typeof browser !== 'undefined' ? browser : null;
+    const chromeAPI = typeof chrome !== 'undefined' ? chrome : null;
+    const runtimeAPI = browserAPI?.runtime || chromeAPI?.runtime;
+    
+    if (!runtimeAPI) {
+      message.error('无法访问运行时 API');
+      return;
+    }
+    
+    const messageData = {
       type: 'SEND_REQUEST',
       data: {
         url: editableRequest.value.url,
@@ -487,7 +580,24 @@ const sendRequest = async () => {
         headers: editableRequest.value.headers,
         body: editableRequest.value.body
       }
-    });
+    };
+    
+    if (browserAPI?.runtime) {
+      // Firefox: Promise-based
+      // @ts-ignore - browser API 在 Firefox 中可用
+      browser.runtime.sendMessage(messageData).catch((error: any) => {
+        console.error('Failed to send request:', error);
+        message.error('发送请求失败');
+      });
+    } else {
+      // Chrome: Callback-based
+      chrome.runtime.sendMessage(messageData, (response) => {
+        if (chrome.runtime.lastError) {
+          console.error('Failed to send request:', chrome.runtime.lastError);
+          message.error('发送请求失败');
+        }
+      });
+    }
     
     message.success('请求已提交，浏览器正在处理…');
     

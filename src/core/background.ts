@@ -3,6 +3,48 @@ import type { HttpRequest, Message } from '../types';
 // 立即输出测试日志
 console.log('🚀 Background script starting...');
 
+// Firefox 兼容性：统一的消息发送函数
+function sendRuntimeMessage(message: any): void {
+  // @ts-ignore - browser API 在 Firefox 中可用
+  const browserAPI = typeof browser !== 'undefined' ? browser : null;
+  const chromeAPI = typeof chrome !== 'undefined' ? chrome : null;
+  
+  // Firefox 优先：检查 browser API
+  // @ts-ignore - browser API 在 Firefox 中可用
+  if (browserAPI && browserAPI.runtime && browserAPI.runtime.sendMessage) {
+    // Firefox: Promise-based
+    try {
+      // @ts-ignore - browser API 在 Firefox 中可用
+      browser.runtime.sendMessage(message).catch((error: any) => {
+        // 忽略连接错误（DevTools 可能未打开）
+        if (error && error.message && !error.message.includes('Receiving end does not exist')) {
+          console.warn('Failed to send message:', error);
+        }
+      });
+    } catch (error: any) {
+      // 如果 sendMessage 返回 undefined（某些 Firefox 版本）
+      console.warn('Failed to send message (Firefox):', error);
+    }
+  } else if (chromeAPI && chromeAPI.runtime && chromeAPI.runtime.sendMessage) {
+    // Chrome: Callback-based
+    try {
+      chrome.runtime.sendMessage(message, () => {
+        // 忽略连接错误
+        if (chrome.runtime.lastError) {
+          const errorMsg = chrome.runtime.lastError.message || '';
+          if (!errorMsg.includes('Receiving end does not exist')) {
+            console.warn('Failed to send message:', chrome.runtime.lastError);
+          }
+        }
+      });
+    } catch (error: any) {
+      console.warn('Failed to send message (Chrome):', error);
+    }
+  } else {
+    console.warn('⚠️ Runtime API not available');
+  }
+}
+
 // 存储拦截的请求
 let interceptedRequests: HttpRequest[] = [];
 let isIntercepting = true; // 默认开启拦截
@@ -19,22 +61,42 @@ function extractDomain(url: string): string | null {
 }
 
 // 获取指定域名的所有Cookie（包括子域名）
-async function getAllCookiesForDomain(domain: string): Promise<chrome.cookies.Cookie[]> {
+async function getAllCookiesForDomain(domain: string): Promise<any[]> {
   return new Promise((resolve) => {
-    if (!chrome.cookies) {
-      console.warn('chrome.cookies API not available');
+    // Firefox 兼容性：检测并使用正确的 cookies API
+    // @ts-ignore - browser API 在 Firefox 中可用
+    const browserAPI = typeof browser !== 'undefined' ? browser : null;
+    const chromeAPI = typeof chrome !== 'undefined' ? chrome : null;
+    const cookiesAPI = browserAPI?.cookies || chromeAPI?.cookies;
+    
+    if (!cookiesAPI) {
+      console.warn('Cookies API not available');
       resolve([]);
       return;
     }
 
     // 首先尝试获取精确域名的cookie
-    chrome.cookies.getAll({ domain }, (cookies) => {
-      if (chrome.runtime.lastError) {
-        console.warn('Failed to get cookies:', chrome.runtime.lastError.message);
-        resolve([]);
-        return;
+    const getAllCookies = (domainToQuery: string): Promise<any[]> => {
+      if (browserAPI?.cookies) {
+        // Firefox: Promise-based
+        // @ts-ignore - browser API 在 Firefox 中可用
+        return browser.cookies.getAll({ domain: domainToQuery });
+      } else {
+        // Chrome: Callback-based
+        return new Promise((resolve) => {
+          chrome.cookies.getAll({ domain: domainToQuery }, (cookies) => {
+            if (chrome.runtime.lastError) {
+              console.warn('Failed to get cookies:', chrome.runtime.lastError.message);
+              resolve([]);
+            } else {
+              resolve(cookies || []);
+            }
+          });
+        });
       }
-      
+    };
+
+    getAllCookies(domain).then((cookies) => {
       const result = cookies || [];
       
       // 如果是子域名（如 www.example.com），也尝试获取父域名的cookie（如 .example.com）
@@ -42,11 +104,11 @@ async function getAllCookiesForDomain(domain: string): Promise<chrome.cookies.Co
       if (parts.length > 2) {
         // 尝试获取父域名的cookie（带点前缀，如 .example.com）
         const parentDomain = '.' + parts.slice(-2).join('.');
-        chrome.cookies.getAll({ domain: parentDomain }, (parentCookies) => {
-          if (!chrome.runtime.lastError && parentCookies) {
+        getAllCookies(parentDomain).then((parentCookies) => {
+          if (parentCookies && parentCookies.length > 0) {
             // 合并结果，去重（基于name和domain）
-            const existing = new Set(result.map(c => `${c.name}@${c.domain}`));
-            parentCookies.forEach(cookie => {
+            const existing = new Set(result.map((c: any) => `${c.name}@${c.domain}`));
+            parentCookies.forEach((cookie: any) => {
               const key = `${cookie.name}@${cookie.domain}`;
               if (!existing.has(key)) {
                 result.push(cookie);
@@ -55,10 +117,15 @@ async function getAllCookiesForDomain(domain: string): Promise<chrome.cookies.Co
             });
           }
           resolve(result);
+        }).catch(() => {
+          resolve(result);
         });
       } else {
         resolve(result);
       }
+    }).catch((error) => {
+      console.warn('Failed to get cookies:', error);
+      resolve([]);
     });
   });
 }
@@ -199,7 +266,14 @@ async function handleHackBarRequest(data: any) {
 }
 
 // 监听来自devtools的消息
-chrome.runtime.onMessage.addListener((message: Message, sender, sendResponse) => {
+// Firefox 兼容性：使用统一的 runtime API
+// @ts-ignore - browser API 在 Firefox 中可用
+const browserAPI = typeof browser !== 'undefined' ? browser : null;
+const chromeAPI = typeof chrome !== 'undefined' ? chrome : null;
+const runtimeAPI = browserAPI?.runtime || chromeAPI?.runtime;
+
+if (runtimeAPI && runtimeAPI.onMessage) {
+  runtimeAPI.onMessage.addListener((message: Message, sender: any, sendResponse: any) => {
   switch (message.type) {
     case 'CLEAR_REQUESTS':
       // 清除所有超时处理
@@ -212,6 +286,58 @@ chrome.runtime.onMessage.addListener((message: Message, sender, sendResponse) =>
     case 'GET_REQUESTS':
       sendResponse({ requests: interceptedRequests });
       break;
+    case 'GET_CURRENT_TAB':
+      // 获取当前活动标签页信息（Firefox DevTools 兼容性）
+      // @ts-ignore - browser API 在 Firefox 中可用
+      const browserAPI = typeof browser !== 'undefined' ? browser : null;
+      const chromeAPI = typeof chrome !== 'undefined' ? chrome : null;
+      const tabsAPI = browserAPI?.tabs || chromeAPI?.tabs;
+      
+      if (tabsAPI) {
+        if (browserAPI?.tabs) {
+          // Firefox: Promise-based
+          // @ts-ignore - browser API 在 Firefox 中可用
+          browser.tabs.query({ active: true, currentWindow: true }).then((tabs: any[]) => {
+            if (tabs && tabs.length > 0) {
+              sendResponse({ success: true, tab: tabs[0] });
+            } else {
+              sendResponse({ success: false, error: 'No active tab found' });
+            }
+          }).catch((error: any) => {
+            sendResponse({ success: false, error: error.message });
+          });
+          return true; // 保持消息通道开放（异步响应）
+        } else {
+          // Chrome: Callback-based
+          chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (chrome.runtime.lastError) {
+              sendResponse({ success: false, error: chrome.runtime.lastError.message });
+            } else if (tabs && tabs.length > 0) {
+              sendResponse({ success: true, tab: tabs[0] });
+            } else {
+              sendResponse({ success: false, error: 'No active tab found' });
+            }
+          });
+          return true; // 保持消息通道开放（异步响应）
+        }
+      } else {
+        sendResponse({ success: false, error: 'Tabs API not available' });
+      }
+      break;
+    case 'GET_COOKIES_FOR_DOMAIN':
+      // 获取指定域名的所有Cookie（Firefox DevTools 兼容性）
+      const domain = message.data?.domain;
+      if (!domain) {
+        sendResponse({ success: false, error: 'Domain is required' });
+        break;
+      }
+      
+      getAllCookiesForDomain(domain).then((cookies) => {
+        sendResponse({ success: true, cookies: cookies });
+      }).catch((error: any) => {
+        sendResponse({ success: false, error: error.message });
+      });
+      return true; // 保持消息通道开放（异步响应）
     case 'SEND_REQUEST':
       // HackBar请求处理
       handleHackBarRequest(message.data);
@@ -252,10 +378,10 @@ chrome.runtime.onMessage.addListener((message: Message, sender, sendResponse) =>
                 });
                 
                 // 通知所有devtools面板
-                chrome.runtime.sendMessage({
+                sendRuntimeMessage({
                   type: 'REQUEST_CAPTURED',
                   data: interceptedRequests[requestIndex]
-                }).catch(() => {});
+                });
               }
             }).catch((error) => {
               console.warn('Failed to get cookies:', error);
@@ -263,11 +389,9 @@ chrome.runtime.onMessage.addListener((message: Message, sender, sendResponse) =>
           }
           
           // 通知所有devtools面板
-          chrome.runtime.sendMessage({
+          sendRuntimeMessage({
             type: 'REQUEST_CAPTURED',
             data: request
-          }).catch(() => {
-            // 忽略无法发送消息的错误
           });
         } else {
           console.log('🔄 Duplicate request ignored:', {
@@ -322,11 +446,9 @@ chrome.runtime.onMessage.addListener((message: Message, sender, sendResponse) =>
             });
             
             // 通知devtools面板更新
-            chrome.runtime.sendMessage({
+            sendRuntimeMessage({
               type: 'REQUEST_UPDATED',
               data: request
-            }).catch(() => {
-              // 忽略无法发送消息的错误
             });
           } else {
             console.log('🔄 Response update skipped (better status already exists):', {
@@ -350,7 +472,13 @@ chrome.runtime.onMessage.addListener((message: Message, sender, sendResponse) =>
       }
       break;
   }
+  
+  // 对于异步响应，返回 true 以保持消息通道开放
+  return true;
 });
+} else {
+  console.warn('⚠️ Runtime API not available for message listener');
+}
 
 // 拦截HTTP请求 (Manifest V3兼容)
 console.log('🚀 Setting up webRequest listeners, isIntercepting:', isIntercepting);
@@ -435,10 +563,10 @@ chrome.webRequest.onBeforeRequest.addListener(
                   });
                   
                   // 通知devtools面板更新
-                  chrome.runtime.sendMessage({
+                  sendRuntimeMessage({
                     type: 'REQUEST_UPDATED',
                     data: interceptedRequests[requestIndex]
-                  }).catch(() => {});
+                  });
                 }
               }).catch((error) => {
                 console.warn('Failed to get cookies:', error);
@@ -470,10 +598,10 @@ chrome.webRequest.onBeforeRequest.addListener(
                 interceptedRequests[requestIndex].responseTime = PENDING_TIMEOUT;
                 
                 // 通知devtools面板更新
-                chrome.runtime.sendMessage({
+                sendRuntimeMessage({
                   type: 'REQUEST_UPDATED',
                   data: interceptedRequests[requestIndex]
-                }).catch(() => {});
+                });
               }
               pendingTimeouts.delete(latestRequest.id);
             }, PENDING_TIMEOUT);
@@ -481,11 +609,9 @@ chrome.webRequest.onBeforeRequest.addListener(
             pendingTimeouts.set(latestRequest.id, timeoutId);
             
             // 通知devtools面板 - 直接发送更新消息
-            chrome.runtime.sendMessage({
+            sendRuntimeMessage({
               type: 'REQUEST_UPDATED',
               data: latestRequest
-            }).catch((error) => {
-              console.log('Failed to send message to devtools:', error);
             });
             
             // 明确允许请求继续
@@ -682,11 +808,9 @@ chrome.webRequest.onCompleted.addListener(
       }
       
       // 通知devtools面板更新
-      chrome.runtime.sendMessage({
+      sendRuntimeMessage({
         type: 'REQUEST_UPDATED',
         data: request
-      }).catch((error) => {
-        console.warn('Failed to send request update:', error);
       });
     } else {
       console.warn('❌ Could not find matching request for completion:', {

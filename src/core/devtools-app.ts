@@ -17,11 +17,17 @@ app.mount('#app');
 // 连接background script
 console.log('🚀 DevTools app starting...');
 
-if (typeof chrome !== 'undefined' && chrome.runtime) {
-  console.log('🚀 Chrome runtime available, setting up message listeners...');
+// Firefox 兼容性：检测并使用正确的 runtime API
+// @ts-ignore - browser API 在 Firefox 中可用
+const browserAPI = typeof browser !== 'undefined' ? browser : null;
+const chromeAPI = typeof chrome !== 'undefined' ? chrome : null;
+const runtimeAPI = browserAPI?.runtime || chromeAPI?.runtime;
+
+if (runtimeAPI) {
+  console.log('🚀 Runtime API available, setting up message listeners...');
   
   // 监听来自background script的消息
-  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  runtimeAPI.onMessage.addListener((message: any, sender: any, sendResponse: any) => {
     console.log('📨 DevTools received message:', message);
     if (message.type === 'REQUEST_CAPTURED') {
       // 触发Vue组件更新
@@ -38,14 +44,30 @@ if (typeof chrome !== 'undefined' && chrome.runtime) {
   
   // 请求现有请求列表
   console.log('📨 Requesting existing requests...');
-  chrome.runtime.sendMessage({ type: 'GET_REQUESTS' }, (response) => {
-    console.log('📨 Received requests response:', response);
-    if (response && response.requests) {
-      window.dispatchEvent(new CustomEvent('hackduck-requests-loaded', {
-        detail: response.requests
-      }));
-    }
-  });
+  if (browserAPI?.runtime) {
+    // Firefox: Promise-based
+    // @ts-ignore - browser API 在 Firefox 中可用
+    browser.runtime.sendMessage({ type: 'GET_REQUESTS' }).then((response: any) => {
+      console.log('📨 Received requests response:', response);
+      if (response && response.requests) {
+        window.dispatchEvent(new CustomEvent('hackduck-requests-loaded', {
+          detail: response.requests
+        }));
+      }
+    }).catch((error: any) => {
+      console.warn('Failed to get requests:', error);
+    });
+  } else {
+    // Chrome: Callback-based
+    chrome.runtime.sendMessage({ type: 'GET_REQUESTS' }, (response: any) => {
+      console.log('📨 Received requests response:', response);
+      if (response && response.requests) {
+        window.dispatchEvent(new CustomEvent('hackduck-requests-loaded', {
+          detail: response.requests
+        }));
+      }
+    });
+  }
 } else {
-  console.log('❌ Chrome runtime not available');
+  console.log('❌ Runtime API not available');
 }
