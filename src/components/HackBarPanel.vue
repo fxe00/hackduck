@@ -30,7 +30,7 @@
           </div>
       <a-form :model="editableRequest" layout="vertical" v-if="editableRequest" size="small">
         <a-row :gutter="12">
-          <a-col :span="6">
+          <a-col :span="4">
             <a-form-item>
               <template #label>
                 <a-tag color="blue" class="form-label-tag">方法</a-tag>
@@ -46,14 +46,28 @@
               </a-select>
             </a-form-item>
           </a-col>
-          <a-col :span="18">
+          <a-col :span="20">
             <a-form-item>
               <template #label>
-                <a-tag color="green" class="form-label-tag">URL</a-tag>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <a-tag color="green" class="form-label-tag">URL</a-tag>
+                  <a-button 
+                    type="link" 
+                    size="small" 
+                    :icon="h(SplitCellsOutlined)"
+                    @click="splitUrlParams"
+                    title="拆分URL参数到Body"
+                    style="padding: 0; height: auto; font-size: 11px;"
+                  >
+                    拆分参数
+                  </a-button>
+                </div>
               </template>
-              <a-input 
+              <a-textarea
                 v-model:value="editableRequest.url" 
-                placeholder="https://example.com/api/endpoint"
+                placeholder="https://example.com/api/endpoint?param1=value1&param2=value2"
+                :auto-size="{ minRows: 2, maxRows: 4 }"
+                class="url-textarea-large"
                 @contextmenu="handleRightClick"
                 @keydown="handleKeyDown"
                 ref="urlInputRef"
@@ -62,54 +76,6 @@
           </a-col>
         </a-row>
         
-        <!-- Headers 编辑 -->
-        <a-form-item>
-          <template #label>
-            <a-tag color="orange" class="form-label-tag">请求头</a-tag>
-          </template>
-          <a-collapse v-model:activeKey="activeHeaders" size="small" class="headers-collapse">
-            <a-collapse-panel key="headers">
-              <template #header>
-                <div class="collapse-header-content">
-                  <span class="collapse-header-icon">📋</span>
-                  <span>Headers</span>
-                  <a-badge :count="headerKeys.length" :number-style="{ backgroundColor: '#1890ff' }" class="header-count-badge" />
-                </div>
-              </template>
-              <div class="headers-editor">
-                <div
-                  v-for="(key, index) in headerKeys"
-                  :key="index"
-                  class="header-row"
-                >
-                  <a-input
-                    v-model:value="headerKeys[index]"
-                    placeholder="Header名称"
-                    style="width: 40%"
-                    size="small"
-                  />
-                  <a-input
-                    v-model:value="headerValues[index]"
-                    placeholder="Header值"
-                    style="width: 60%"
-                    size="small"
-                  />
-                  <a-button
-                    type="text"
-                    danger
-                    size="small"
-                    :icon="h(DeleteOutlined)"
-                    @click="removeHeader(index)"
-                  />
-                </div>
-                <a-button @click="addHeader" :icon="h(PlusOutlined)" size="small" type="dashed" block class="add-header-btn">
-                  添加 Header
-                </a-button>
-              </div>
-            </a-collapse-panel>
-          </a-collapse>
-        </a-form-item>
-        
         <!-- Body 编辑 -->
         <a-form-item>
           <template #label>
@@ -117,7 +83,7 @@
           </template>
           <a-textarea
             v-model:value="editableRequest.body"
-            :style="{ height: Math.max(100, Math.min(300, panelHeight - 350)) + 'px' }"
+            :style="{ height: Math.max(200, Math.min(500, panelHeight - 250)) + 'px' }"
             placeholder="请求体内容 (JSON, XML, 表单数据等)"
             @contextmenu="handleRightClick"
             @keydown="handleKeyDown"
@@ -132,26 +98,90 @@
     </div>
       </div>
 
-      <!-- 右侧：用户笔记区域 (25%) -->
-      <div class="notes-panel">
-        <div class="notes-header">
-          <h4>📝 用户笔记</h4>
-          <a-button 
-            type="text" 
-            size="small" 
-            @click="clearNotes"
-            title="清空笔记"
-          >
-            清空
-          </a-button>
+      <!-- 右侧：Headers/用户笔记左右切换区域 -->
+      <div class="right-panels-container">
+        <!-- Headers 面板 -->
+        <div class="headers-panel-wrapper" :class="{ hidden: rightPanelMode === 'notes' }">
+          <div class="panel-header">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 12px; font-weight: 600;">📋 Headers</span>
+              <a-badge :count="headerKeys.length" :number-style="{ backgroundColor: '#1890ff', fontSize: '10px', minWidth: '16px', height: '16px', lineHeight: '16px' }" />
+            </div>
+            <a-button 
+              type="text" 
+              size="small" 
+              @click="rightPanelMode = 'notes'"
+              title="切换到笔记"
+            >
+              →
+            </a-button>
+          </div>
+          <div class="headers-panel" ref="headersPanelRef">
+            <div class="headers-editor">
+              <div
+                v-for="(key, index) in headerKeys"
+                :key="index"
+                class="header-row"
+              >
+                <a-input
+                  v-model:value="headerKeys[index]"
+                  placeholder="Header名称"
+                  style="width: 40%"
+                  size="small"
+                />
+                <a-input
+                  v-model:value="headerValues[index]"
+                  placeholder="Header值"
+                  style="width: 60%"
+                  size="small"
+                />
+                <a-button
+                  type="text"
+                  danger
+                  size="small"
+                  :icon="h(DeleteOutlined)"
+                  @click="removeHeader(index)"
+                />
+              </div>
+              <a-button @click="addHeader" :icon="h(PlusOutlined)" size="small" type="dashed" block class="add-header-btn">
+                添加 Header
+              </a-button>
+            </div>
+          </div>
         </div>
-        <a-textarea
-          v-model:value="userNotes"
-          class="notes-textarea"
-          placeholder="在这里记录你的测试笔记、思路、发现的问题等..."
-          :auto-size="{ minRows: 10, maxRows: 50 }"
-          @blur="saveNotes"
-        />
+        
+        <!-- 用户笔记面板 -->
+        <div class="notes-panel-wrapper" :class="{ hidden: rightPanelMode === 'headers' }">
+          <div class="panel-header">
+            <span style="font-size: 12px; font-weight: 600;">📝 笔记</span>
+            <div style="display: flex; gap: 4px;">
+              <a-button 
+                type="text" 
+                size="small" 
+                @click="clearNotes"
+                title="清空笔记"
+              >
+                清空
+              </a-button>
+              <a-button 
+                type="text" 
+                size="small" 
+                @click="rightPanelMode = 'headers'"
+                title="切换到Headers"
+              >
+                ←
+              </a-button>
+            </div>
+          </div>
+          <div class="notes-content">
+            <a-textarea
+              v-model:value="userNotes"
+              class="notes-textarea"
+              placeholder="在这里记录你的测试笔记、思路、发现的问题等..."
+              @blur="saveNotes"
+            />
+          </div>
+        </div>
       </div>
     </div>
 
@@ -168,13 +198,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, h, onMounted, onUnmounted } from 'vue';
-import { message } from 'ant-design-vue';
+import { ref, watch, h, onMounted, onUnmounted, nextTick } from 'vue';
+import { message, Modal } from 'ant-design-vue';
 import { 
   DownloadOutlined,
   SendOutlined,
   DeleteOutlined,
-  PlusOutlined
+  PlusOutlined,
+  SplitCellsOutlined
 } from '@ant-design/icons-vue';
 import type { HttpRequest } from '../types';
 import ContextMenu from './ContextMenu.vue';
@@ -185,6 +216,7 @@ const headerKeys = ref<string[]>([]);
 const headerValues = ref<string[]>([]);
 const isSendingRequest = ref(false);
 const activeHeaders = ref<string[]>([]);
+const rightPanelMode = ref<'headers' | 'notes'>('headers'); // 右侧面板模式：headers 或 notes
 
 // 用户笔记
 const userNotes = ref<string>('');
@@ -195,8 +227,10 @@ const contextMenuVisible = ref(false);
 const contextMenuPosition = ref({ x: 0, y: 0 });
 const selectedText = ref('');
 const targetElement = ref<HTMLElement | null>(null);
-const urlInputRef = ref<HTMLInputElement>();
+const urlInputRef = ref<HTMLTextAreaElement>();
 const bodyTextareaRef = ref<HTMLTextAreaElement>();
+const headersPanelRef = ref<HTMLElement>();
+const headersEditorHeight = ref(500);
 
 // 历史记录相关
 const history = ref<Array<{ type: string; originalText: string; newText: string; timestamp: number }>>([]);
@@ -204,7 +238,17 @@ const historyIndex = ref(-1);
 const maxHistorySize = 50;
 
 // 动态高度相关
-const panelHeight = ref(500);
+const panelHeight = ref(800);
+
+// 更新 headers-editor 高度
+const updateHeadersEditorHeight = () => {
+  nextTick(() => {
+    if (headersPanelRef.value) {
+      const panelHeight = headersPanelRef.value.clientHeight;
+      headersEditorHeight.value = Math.max(400, panelHeight - 24); // 减去 24px（上下 padding）
+    }
+  });
+};
 
 // 计算动态高度
 const calculatePanelHeight = () => {
@@ -224,12 +268,16 @@ const calculatePanelHeight = () => {
     panelHeight.value = calculatedHeight;
   }
   
+  // 计算 headers-editor 的高度（等于 headers-panel 高度减去一点点）
+  updateHeadersEditorHeight();
+  
   console.log('📏 Calculated HackBar panel height:', panelHeight.value, 'Window height:', windowHeight);
 };
 
 // 窗口大小变化监听
 const handleWindowResize = () => {
   calculatePanelHeight();
+  updateHeadersEditorHeight();
 };
 
 // 将cookies数组转换为Cookie header字符串
@@ -862,10 +910,67 @@ const saveNotes = () => {
 };
 
 const clearNotes = () => {
-  userNotes.value = '';
-  saveNotes();
-  message.success('笔记已清空');
+  Modal.confirm({
+    title: '确认清空笔记',
+    content: '确定要清空所有笔记内容吗？此操作无法撤销。',
+    okText: '确认清空',
+    cancelText: '取消',
+    okType: 'danger',
+    centered: true,
+    onOk() {
+      userNotes.value = '';
+      saveNotes();
+      message.success('笔记已清空');
+    },
+  });
 };
+
+// 拆分 URL 参数功能 - 格式化显示URL参数
+const splitUrlParams = () => {
+  if (!editableRequest.value || !editableRequest.value.url) {
+    message.warning('请先输入 URL');
+    return;
+  }
+  
+  try {
+    const url = editableRequest.value.url.trim();
+    const urlObj = new URL(url);
+    const params = urlObj.searchParams;
+    
+    if (params.toString().length === 0) {
+      message.info('URL 中没有查询参数');
+      return;
+    }
+    
+    // 构建格式化的URL：基础URL + 每行一个参数
+    let formattedUrl = urlObj.origin + urlObj.pathname;
+    
+    // 将参数格式化为多行显示
+    const paramEntries: string[] = [];
+    params.forEach((value, key) => {
+      paramEntries.push(`${key}=${value}`);
+    });
+    
+    // 如果URL中已经有查询参数，则格式化显示
+    if (paramEntries.length > 0) {
+      formattedUrl += '\n?' + paramEntries.join('\n&');
+    }
+    
+    editableRequest.value.url = formattedUrl;
+    message.success(`已格式化 ${paramEntries.length} 个参数`);
+    
+  } catch (error: any) {
+    message.error('URL 格式错误，无法拆分参数');
+    console.error('Failed to split URL params:', error);
+  }
+};
+
+// 监听面板切换
+watch(rightPanelMode, () => {
+  nextTick(() => {
+    updateHeadersEditorHeight();
+  });
+});
 
 // 生命周期
 onMounted(() => {
@@ -874,6 +979,19 @@ onMounted(() => {
   
   // 监听窗口大小变化
   window.addEventListener('resize', handleWindowResize);
+  
+  // 使用 ResizeObserver 监听 headers-panel 高度变化
+  nextTick(() => {
+    if (headersPanelRef.value) {
+      const resizeObserver = new ResizeObserver(() => {
+        updateHeadersEditorHeight();
+      });
+      resizeObserver.observe(headersPanelRef.value);
+      onUnmounted(() => {
+        resizeObserver.disconnect();
+      });
+    }
+  });
   
   // 加载笔记
   loadNotes();
@@ -990,6 +1108,18 @@ watch([headerKeys, headerValues], updateRequestHeaders, { deep: true });
   border-bottom: 2px solid #e8e8e8;
 }
 
+/* URL 多行输入框样式 - 增大尺寸 */
+.url-textarea-large {
+  font-size: 13px !important;
+  line-height: 1.6 !important;
+  padding: 10px 12px !important;
+}
+
+.url-textarea-large textarea {
+  font-size: 13px !important;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
+}
+
 /* 动态调整HackBar中的textarea高度 - 现在由JavaScript控制 */
 .request-editor .ant-textarea {
   resize: vertical;
@@ -998,7 +1128,8 @@ watch([headerKeys, headerValues], updateRequestHeaders, { deep: true });
   border-radius: 6px;
   border-color: #e8e8e8;
   transition: all 0.2s ease;
-  font-size: 11px;
+  font-size: 13px;
+  padding: 10px 12px;
 }
 
 .request-editor .ant-textarea:hover {
@@ -1057,14 +1188,6 @@ watch([headerKeys, headerValues], updateRequestHeaders, { deep: true });
 }
 
 /* Headers编辑器样式 */
-.headers-editor {
-  margin-bottom: 8px;
-  padding: 12px;
-  background: linear-gradient(135deg, #fafafa 0%, #ffffff 100%);
-  border-radius: 6px;
-  border: 1px solid #e8e8e8;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
-}
 
 .header-row {
   display: flex;
@@ -1223,8 +1346,38 @@ watch([headerKeys, headerValues], updateRequestHeaders, { deep: true });
   background: #1890ff;
 }
 
-/* 笔记面板样式 */
-.notes-panel {
+/* 右侧面板容器 */
+.right-panels-container {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  gap: 12px;
+  min-height: 0;
+  align-items: stretch;
+}
+
+/* Headers 面板包装器 */
+.headers-panel-wrapper {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%);
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  transition: all 0.3s ease;
+  min-height: 0;
+  height: 100%;
+}
+
+.headers-panel-wrapper.hidden {
+  display: none;
+}
+
+/* 笔记面板包装器 */
+.notes-panel-wrapper {
   flex: 1;
   min-width: 0;
   display: flex;
@@ -1234,9 +1387,15 @@ watch([headerKeys, headerValues], updateRequestHeaders, { deep: true });
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   overflow: hidden;
+  transition: all 0.3s ease;
 }
 
-.notes-header {
+.notes-panel-wrapper.hidden {
+  display: none;
+}
+
+/* 面板头部 */
+.panel-header {
   padding: 10px 14px;
   border-bottom: 1px solid #e8e8e8;
   background: linear-gradient(135deg, #f0f8ff 0%, #ffffff 100%);
@@ -1246,18 +1405,38 @@ watch([headerKeys, headerValues], updateRequestHeaders, { deep: true });
   flex-shrink: 0;
 }
 
-.notes-header h4 {
-  margin: 0;
-  font-size: 11px;
-  font-weight: 600;
-  color: rgba(0, 0, 0, 0.85);
-  letter-spacing: 0.2px;
+.headers-panel {
+  flex: 1;
+  overflow: hidden;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  box-sizing: border-box;
+  position: relative;
 }
 
-.notes-header .ant-btn {
-  font-size: 10px;
-  padding: 2px 8px;
-  height: 22px;
+.headers-editor {
+  flex: 1;
+  padding: 12px;
+  width: 100%;
+  min-height: 0;
+  max-height: none !important; /* 移除任何 max-height 限制 */
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* 填充 headers-panel 的全部高度 */
+}
+
+.notes-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0 12px 12px 12px;
+  min-height: 0;
 }
 
 .notes-textarea {

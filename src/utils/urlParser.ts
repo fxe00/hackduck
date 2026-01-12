@@ -59,27 +59,68 @@ export class URLParser {
   static isAnalyticsRequest(url: string): boolean {
     const lowerUrl = url.toLowerCase();
     
-    // 检查文件扩展名
+    // 排除动态请求扩展名（这些通常是业务API，不是静态资源）
+    const dynamicExtensions = ['do', 'action', 'jsp', 'asp', 'aspx', 'php', 'cgi', 'py', 'rb', 'pl'];
     const extension = this.getFileExtension(url);
+    if (extension && dynamicExtensions.includes(extension)) {
+      return false; // 动态请求扩展名不应该被判定为分析请求
+    }
+    
+    // 检查文件扩展名
     if (extension && ['gif', 'png', 'jpg', 'jpeg'].includes(extension)) {
-      // 检查是否是分析请求的图片
-      const analyticsPatterns = [
-        '/sa.gif', '/analytics', '/track', '/beacon', '/collect',
-        '/gtag', '/ga.js', '/gtm.js', '/pixel', '/count', '/log',
-        '/stats', '/metric', '/measure', '/monitor', '/report'
+      // 检查是否是分析请求的图片（需要精确匹配路径）
+      const analyticsImagePatterns = [
+        '/sa.gif', '/analytics.gif', '/track.gif', '/beacon.gif',
+        '/pixel.gif', '/count.gif', '/log.gif'
       ];
       
-      return analyticsPatterns.some(pattern => lowerUrl.includes(pattern));
+      return analyticsImagePatterns.some(pattern => lowerUrl.includes(pattern));
     }
 
-    // 检查URL路径和查询参数
-    const analyticsKeywords = [
-      'analytics', 'track', 'beacon', 'collect', 'gtag', 'pixel',
-      'count', 'log', 'stats', 'metric', 'measure', 'monitor',
-      'report', 'sa.gif', 'ga.js', 'gtm.js'
+    // 检查URL路径（需要更精确的匹配，避免误判业务API）
+    // 只匹配明确的分析服务路径，而不是包含关键词的任意路径
+    const analyticsPathPatterns = [
+      '/analytics/', '/analytics.js', '/analytics.php',
+      '/track/', '/track.js', '/track.php',
+      '/beacon/', '/beacon.js', '/beacon.php',
+      '/gtag/', '/gtag.js',
+      '/ga.js', '/gtm.js', '/analytics.js',
+      '/pixel/', '/pixel.js',
+      '/count/', '/count.js',
+      '/log/', '/log.js',
+      '/stats/', '/stats.js',
+      '/metric/', '/metric.js',
+      '/measure/', '/measure.js',
+      '/monitor/', '/monitor.js',
+      '/report/', '/report.js',
+      '/collect.js', '/collect.php', '/collect.gif', // 只匹配明确的收集脚本
+      '/sa.gif', '/analytics.gif'
     ];
 
-    return analyticsKeywords.some(keyword => lowerUrl.includes(keyword));
+    // 检查是否匹配分析服务路径
+    const matchesAnalyticsPath = analyticsPathPatterns.some(pattern => {
+      // 确保是完整的路径匹配，而不是部分匹配
+      return lowerUrl.includes(pattern);
+    });
+
+    if (matchesAnalyticsPath) {
+      return true;
+    }
+
+    // 检查查询参数中的分析关键词（更宽松的匹配）
+    try {
+      const parsed = new UrlParse(url);
+      const query = parsed.query.toLowerCase();
+      const analyticsQueryKeywords = [
+        'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
+        'ga', 'gid', 'gtm', 'analytics', 'tracking', 'beacon'
+      ];
+      
+      return analyticsQueryKeywords.some(keyword => query.includes(keyword));
+    } catch {
+      // 解析失败，返回 false
+      return false;
+    }
   }
 
   /**
