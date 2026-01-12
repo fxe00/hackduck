@@ -1,6 +1,6 @@
 {
   "name": "hackduck",
-  "version": "1.1.6",
+  "version": "1.1.7",
   "description": "A powerful browser extension for HTTP request debugging and manipulation",
   "main": "index.js",
   "scripts": {
