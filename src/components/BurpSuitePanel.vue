@@ -164,7 +164,7 @@
                 <pre class="http-request-highlighted" v-html="highlightedRequestText"></pre>
                 <a-textarea
                   v-model:value="requestText"
-                  :style="{ height: Math.max(200, editorHeight - 80) + 'px' }"
+                  :style="{ height: Math.max(200, editorHeight - 110) + 'px' }"
                   placeholder="原始HTTP请求内容...&#10;&#10;例如：&#10;GET /api/users HTTP/1.1&#10;Host: example.com&#10;User-Agent: Mozilla/5.0...&#10;Accept: application/json"
                   @contextmenu="handleRightClick"
                   @keydown="handleKeyDown"
@@ -488,7 +488,7 @@ const calculateEditorHeight = () => {
   // 使用和请求列表相同的高度计算方式
   const availableHeight = windowHeight - 100; // 和请求列表保持一致
   const minHeight = 200; // 降低最小高度，确保在小屏幕上也能使用
-  const maxHeight = windowHeight - 50;
+  const maxHeight = windowHeight - 80; // 减小最大高度，避免底部内容被遮挡
   
   // 确保有足够空间显示编辑器内容
   const calculatedHeight = Math.max(minHeight, Math.min(maxHeight, availableHeight));
