@@ -51,7 +51,7 @@ git push origin v1.0.0
 
 #### 填写Release信息
 - **Tag version**: `v1.0.0`
-- **Release title**: `HackDuck v1.0.0 - HTTP Request Debugger`
+- **Release title**: `HackDuck v1.0.0`
 - **Description**: 使用`RELEASE_NOTES_v1.0.0.md`的内容
 
 #### 上传构建文件
@@ -66,7 +66,7 @@ git push origin v1.0.0
 ## 📝 Release描述模板
 
 ```markdown
-# HackDuck v1.0.0 - HTTP Request Debugger
+# HackDuck v1.0.0
 
 ## 🎉 首次正式发布
 

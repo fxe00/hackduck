@@ -56,7 +56,7 @@ git push origin v1.1.0
 ## 📝 Release说明
 
 每个自动发布的Release包含：
-- **标题**：HackDuck v1.1.0 - HTTP Request Debugger
+- **标题**：HackDuck v1.1.0
 - **详细说明**：功能特性、安装说明、技术特性等
 - **构建文件**：三个浏览器版本的ZIP文件
 - **自动生成**：基于tag名称和项目信息

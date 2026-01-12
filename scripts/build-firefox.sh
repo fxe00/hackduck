@@ -62,7 +62,7 @@ cat > releases/dist-firefox/manifest.json << EOF
   ],
   "browser_specific_settings": {
     "gecko": {
-      "id": "hackduck@hackduck.dev",
+      "id": "hackduck@example.com",
       "strict_min_version": "109.0"
     }
   },
@@ -76,7 +76,7 @@ echo "📝 Creating Firefox updates.json..."
 cat > releases/updates.json << EOF
 {
   "addons": {
-    "hackduck@hackduck.dev": {
+    "hackduck@example.com": {
       "updates": [
         {
           "version": "$VERSION",

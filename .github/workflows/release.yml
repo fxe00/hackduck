@@ -47,9 +47,9 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ github.ref_name }}
-          name: HackDuck ${{ github.ref_name }} - HTTP Request Debugger
+          name: HackDuck ${{ github.ref_name }}
           body: |
-            # HackDuck ${{ github.ref_name }} - HTTP Request Debugger
+            # HackDuck ${{ github.ref_name }}
 
             ## 🎉 自动发布
 
