@@ -49,6 +49,14 @@ function sendRuntimeMessage(message: any): void {
 let interceptedRequests: HttpRequest[] = [];
 let isIntercepting = true; // 默认开启拦截
 
+// 跟踪当前 DevTools 窗口的面板创建状态
+// 使用时间戳来跟踪，每次 DevTools 打开时会重置（通过检查时间间隔）
+let lastPanelCreationTime = 0;
+const PANEL_CREATION_WINDOW = 5000; // 5秒内的重复创建请求会被阻止
+
+// 跟踪 DevTools 面板是否已创建（Firefox 兼容性）
+let devtoolsPanelCreated = false;
+
 // 从URL中提取域名
 function extractDomain(url: string): string | null {
   try {
@@ -323,6 +331,30 @@ if (runtimeAPI && runtimeAPI.onMessage) {
       } else {
         sendResponse({ success: false, error: 'Tabs API not available' });
       }
+      break;
+    case 'CHECK_AND_MARK_PANEL_CREATION':
+      // 检查是否应该创建面板（防止短时间内重复创建）
+      const now = Date.now();
+      const timeSinceLastCreate = now - lastPanelCreationTime;
+      
+      if (timeSinceLastCreate < PANEL_CREATION_WINDOW) {
+        // 5秒内已创建过，阻止创建
+        sendResponse({ shouldCreate: false });
+      } else {
+        // 允许创建，记录时间
+        lastPanelCreationTime = now;
+        sendResponse({ shouldCreate: true });
+      }
+      break;
+    case 'PANEL_CREATED_SUCCESS':
+      // 面板创建成功，确认时间戳
+      lastPanelCreationTime = Date.now();
+      sendResponse({ success: true });
+      break;
+    case 'PANEL_CREATION_FAILED':
+      // 面板创建失败（可能已存在），清除时间戳以便重试
+      lastPanelCreationTime = 0;
+      sendResponse({ success: true });
       break;
     case 'GET_COOKIES_FOR_DOMAIN':
       // 获取指定域名的所有Cookie（Firefox DevTools 兼容性）
